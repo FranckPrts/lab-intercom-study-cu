@@ -1,8 +1,8 @@
 # Conda environment for the study tooling (bench test, stream checks, analysis).
 # VS Code: run the task "Env: create" once, then "Env: update" after editing this file.
 # Terminal: conda env create --file environment.yml  (first time)
-#           conda env update --name columbia-study --file environment.yml --prune
-name: columbia-study
+#           conda env update --name lab-intercom-study-cu --file environment.yml --prune
+name: lab-intercom-study-cu
 channels:
   - conda-forge
 dependencies:

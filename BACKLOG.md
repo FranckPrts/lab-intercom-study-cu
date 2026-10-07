@@ -15,7 +15,7 @@ Tick items off here as they are done; move decisions into "Decided".
       the stream naming during sync)
 - [ ] 32-bit Python for the SDK workers (the SDK DLL is 32-bit). conda-forge no
       longer builds 32-bit Windows packages, so this is probably a separate
-      32-bit python.org install alongside the `columbia-study` conda env;
+      32-bit python.org install alongside the `lab-intercom-study-cu` conda env;
       check what is available before deciding
 - [ ] Control program: one worker per headset, config file (MAC, participant,
       channel labels), wait for all three to sync, battery and connection checks,
@@ -63,7 +63,7 @@ Tick items off here as they are done; move decisions into "Decided".
 - 3 × Enobio 32, Wi-Fi via a dedicated router (USB as backup)
 - Windows for acquisition; the Mac is for writing code only
 - LSL as the recording backbone, LabRecorder to XDF
-- Python for our code, in the `columbia-study` conda env (`environment.yml`),
+- Python for our code, in the `lab-intercom-study-cu` conda env (`environment.yml`),
   set up through VS Code tasks (`.vscode/tasks.json`)
 - Respiration and heart rate on separate LSL devices, not on the Enobio channels
 - Sessions are within Enobio battery life (verified)

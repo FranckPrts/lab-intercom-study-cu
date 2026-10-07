@@ -27,7 +27,7 @@ What it answers:
    - In VS Code: **Terminal > Run Task... > Env: create**, then
      **Env: check** to confirm the packages import.
    - Later, after `environment.yml` changes: **Env: update**.
-   - Optional: pick `columbia-study` with **Python: Select Interpreter** so the
+   - Optional: pick `lab-intercom-study-cu` with **Python: Select Interpreter** so the
      editor uses the same env.
 3. **LabRecorder**: download the latest Windows release from
    https://github.com/labstreaminglayer/App-LabRecorder/releases
@@ -42,7 +42,7 @@ What it answers:
 ## Run
 
 Each step has a VS Code task (**Terminal > Run Task...**). From a terminal
-with `conda activate columbia-study`, the equivalent `python bench/...`
+with `conda activate lab-intercom-study-cu`, the equivalent `python bench/...`
 command works too.
 
 1. Charge and power on the three Enobios. Electrodes are not needed.

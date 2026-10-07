@@ -4,7 +4,7 @@
   "tasks": [
     {
       "label": "Env: create",
-      "detail": "First-time setup: create the columbia-study conda env from environment.yml",
+      "detail": "First-time setup: create the lab-intercom-study-cu conda env from environment.yml",
       "type": "shell",
       "command": "conda env create --file environment.yml",
       "options": { "cwd": "${workspaceFolder}" },
@@ -14,7 +14,7 @@
       "label": "Env: update",
       "detail": "Sync the existing env after environment.yml changes (use Env: create the first time)",
       "type": "shell",
-      "command": "conda env update --name columbia-study --file environment.yml --prune",
+      "command": "conda env update --name lab-intercom-study-cu --file environment.yml --prune",
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": []
     },
@@ -22,7 +22,7 @@
       "label": "Env: check",
       "detail": "Confirm the env exists and its packages import",
       "type": "shell",
-      "command": "conda run --name columbia-study python -c \"import sys, numpy, pyxdf, pylsl; print(sys.version); print('numpy', numpy.__version__, '| pyxdf', pyxdf.__version__, '| pylsl', pylsl.__version__, '| liblsl', pylsl.library_version())\"",
+      "command": "conda run --name lab-intercom-study-cu python -c \"import sys, numpy, pyxdf, pylsl; print(sys.version); print('numpy', numpy.__version__, '| pyxdf', pyxdf.__version__, '| pylsl', pylsl.__version__, '| liblsl', pylsl.library_version())\"",
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": []
     },
@@ -30,7 +30,7 @@
       "label": "Bench: launch streamers",
       "detail": "Start one NEDeviceStreamer per device in bench/devices.json (Windows)",
       "type": "shell",
-      "command": "conda run --no-capture-output --name columbia-study python bench/launch_streamers.py",
+      "command": "conda run --no-capture-output --name lab-intercom-study-cu python bench/launch_streamers.py",
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": []
     },
@@ -38,7 +38,7 @@
       "label": "Bench: check streams",
       "detail": "List LSL streams and measure rates and timestamp delays",
       "type": "shell",
-      "command": "conda run --no-capture-output --name columbia-study python bench/check_streams.py",
+      "command": "conda run --no-capture-output --name lab-intercom-study-cu python bench/check_streams.py",
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": []
     },
@@ -46,7 +46,7 @@
       "label": "Bench: analyze recording",
       "detail": "Data gaps and tap timing for a LabRecorder XDF file",
       "type": "shell",
-      "command": "conda run --no-capture-output --name columbia-study python bench/analyze_recording.py \"${input:xdfPath}\"",
+      "command": "conda run --no-capture-output --name lab-intercom-study-cu python bench/analyze_recording.py \"${input:xdfPath}\"",
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": []
     }
