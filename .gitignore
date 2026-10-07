@@ -1,0 +1,9 @@
+# NE SDK (vendor PROTECTED binaries, not committed)
+NESDK-1.0.0/
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+bench/devices.json

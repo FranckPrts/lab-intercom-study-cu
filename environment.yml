@@ -1,0 +1,14 @@
+# Conda environment for the study tooling (bench test, stream checks, analysis).
+# VS Code: run the task "Env: create" once, then "Env: update" after editing this file.
+# Terminal: conda env create --file environment.yml  (first time)
+#           conda env update --name columbia-study --file environment.yml --prune
+name: columbia-study
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - numpy
+  - pyxdf>=1.16
+  - pip
+  - pip:
+      - pylsl>=1.16  # not current on conda-forge; the pip wheel bundles liblsl
