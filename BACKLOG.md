@@ -5,28 +5,25 @@ Tick items off here as they are done; move decisions into "Decided".
 
 ## Now
 
-- [ ] Run the bench test on the Windows PC and fill in the results (`bench/README.md`)
+- [x] Get USB Ethernet adapters for the tablets if they have no Ethernet port
+- [ ] Run the bench test (tablets + recording PC) and fill in the results (`bench/README.md`)
 
 ## Next (depends on the bench test)
 
-- [ ] Decide: one PC for all three Enobios, or split across PCs on the LAN
-- [ ] Decide: use the SDK's own LSL outlets, or read samples and publish our own
-      (depends on whether the SDK's LSL timestamps are on the LSL clock, and on
-      the stream naming during sync)
-- [ ] 32-bit Python for the SDK workers (the SDK DLL is 32-bit). conda-forge no
-      longer builds 32-bit Windows packages, so this is probably a separate
-      32-bit python.org install alongside the `lab-intercom-study-cu` conda env;
-      check what is available before deciding
-- [ ] Control program: one worker per headset, config file (MAC, participant,
-      channel labels), wait for all three to sync, battery and connection checks,
-      single "all ready" start
+- [ ] Confirm NIC2's LSL timestamps are on the LSL clock once the synchronizer is done
+- [ ] Session checklist per tablet: NECBOX Wi-Fi, synchronizer on, LSL outlet
+      name, battery, signal quality, then a single "all ready" start
+- [ ] Recording PC: LabRecorder config (stream list, file naming), or a small
+      script that checks all 12 streams before starting
 - [ ] Channel labels for the default 32-channel montage, plus alternative montages
-- [ ] Recording conventions: file naming, participant and session IDs, storage location
+- [ ] Recording conventions: file naming, participant and session IDs, storage
+      location; how NIC2's own per-tablet files are kept as backup
 
 ## Task markers
 
 - [ ] Wait for your examples of how markers will be sent
-- [ ] Marker LSL stream design (name, format, what each event code means)
+- [ ] Marker LSL stream design (name, format, what each event code means), and
+      whether markers also go into NIC2 (`P1-Markers` inlets) or only into LSL
 
 ## Respiration and heart rate
 
@@ -34,16 +31,16 @@ Tick items off here as they are done; move decisions into "Decided".
 - [ ] How many of each: one set per participant (6 devices) or shared
 - [ ] Sampling rates, and whether each device timestamps at acquisition or on
       arrival at the PC (Bluetooth devices often stamp on arrival, adding delay)
-- [ ] Which PC they run on
+- [ ] Which computer they run on (the participant's tablet or the recording PC)
 - [ ] Add them to the bench test: check that they appear in LSL and record next to the EEG
 
 ## Questions for Neuroelectrics
 
-- [ ] Units of the raw EEG integers (nanovolts?)
-- [ ] Is it safe to connect several devices from one process with the SDK?
-- [ ] Which clock the SDK's LSL timestamps use, before and after sync
-- [ ] Does sync keep correcting in the background for long sessions?
-- [ ] Accelerometer sampling rate
+- [ ] Units of the EEG values NIC2 sends over LSL (microvolts? nanovolts?)
+- [ ] Which clock NIC2's LSL timestamps use, before and after the synchronizer finishes
+- [ ] Does the synchronizer keep correcting in the background for long sessions?
+- [ ] Accelerometer sampling rate, and whether it is always on in NIC2's LSL output
+- [ ] Can an Enobio join an existing router instead of making its own network?
 
 ## Timing validation
 
@@ -54,15 +51,21 @@ Tick items off here as they are done; move decisions into "Decided".
 
 ## Parked
 
+- NE SDK (`NESDK-1.0.0`, `NEDeviceStreamer.exe`) for our own acquisition code:
+  not needed while NIC2 does the streaming
 - NIC2 for the analysis pipeline (revisit later)
 - Live inter-brain synchrony display (not needed; recording only for now)
 - Interaction paradigm (not finalized yet)
 
 ## Decided
 
-- 3 × Enobio 32, Wi-Fi via a dedicated router (USB as backup)
-- Windows for acquisition; the Mac is for writing code only
-- LSL as the recording backbone, LabRecorder to XDF
+- 3 × Enobio 32, each on its own Windows tablet running NIC2
+- Each Enobio makes its own Wi-Fi network (NECBOX); the tablet's Wi-Fi joins it,
+  so the tablets talk to each other over a wired network
+- One recording PC on the same wired network, running LabRecorder
+- NIC2 publishes LSL per participant (`P1-EEG`, `P1-Accelerometer`,
+  `P1-Quality`, `P1-Markers`, ...), with its synchronizer on
+- LSL as the recording backbone, LabRecorder to XDF; NIC2 also saves its own files
 - Python for our code, in the `lab-intercom-study-cu` conda env (`environment.yml`),
   set up through VS Code tasks (`.vscode/tasks.json`)
 - Respiration and heart rate on separate LSL devices, not on the Enobio channels

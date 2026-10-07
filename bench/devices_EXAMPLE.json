@@ -1,8 +1,7 @@
 {
-  "sync": true,
   "devices": [
-    {"name": "P1", "mac": "00:07:80:XX:XX:XX"},
-    {"name": "P2", "mac": "00:07:80:XX:XX:XX"},
-    {"name": "P3", "mac": "00:07:80:XX:XX:XX"}
+    {"name": "P1", "mac": "00:07:80:XX:XX:XX", "tablet": "TABLET-1"},
+    {"name": "P2", "mac": "00:07:80:XX:XX:XX", "tablet": "TABLET-2"},
+    {"name": "P3", "mac": "00:07:80:XX:XX:XX", "tablet": "TABLET-3"}
   ]
 }

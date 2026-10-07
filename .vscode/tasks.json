@@ -27,16 +27,8 @@
       "problemMatcher": []
     },
     {
-      "label": "Bench: launch streamers",
-      "detail": "Start one NEDeviceStreamer per device in bench/devices.json (Windows)",
-      "type": "shell",
-      "command": "conda run --no-capture-output --name lab-intercom-study-cu python bench/launch_streamers.py",
-      "options": { "cwd": "${workspaceFolder}" },
-      "problemMatcher": []
-    },
-    {
       "label": "Bench: check streams",
-      "detail": "List LSL streams and measure rates and timestamp delays",
+      "detail": "List the NIC2 LSL streams and measure rates and timestamp delays (recording PC)",
       "type": "shell",
       "command": "conda run --no-capture-output --name lab-intercom-study-cu python bench/check_streams.py",
       "options": { "cwd": "${workspaceFolder}" },

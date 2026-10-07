@@ -14,7 +14,7 @@ import re
 import numpy as np
 import pyxdf
 
-NAME_RE = re.compile(r"^(?P<pid>.+?)-(?P<kind>EEG|Accelerometer)(?P<suffix>.*)$")
+NAME_RE = re.compile(r"^(?P<pid>.+?)-(?P<kind>EEG|Accelerometer|Quality|Markers)$")
 GAP_FACTOR = 2.5  # a jump larger than this many sample periods counts as a gap
 
 
@@ -173,8 +173,6 @@ def main():
         m = NAME_RE.match(stream_name(s))
         if not m:
             continue
-        if "NOT_SYNCED" in m["suffix"].upper():
-            print(f"\n! {stream_name(s)} was recorded before synchronization finished")
         if m["kind"] == "Accelerometer" and len(s["time_stamps"]) > 1:
             acc[m["pid"]] = s
 

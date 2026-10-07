@@ -5,6 +5,8 @@ reports the measured sampling rate and the delay between each sample's
 timestamp and this computer's LSL clock. A delay of seconds or more means a
 stream's timestamps are not on the LSL clock and cannot be aligned as-is.
 
+Run it on the recording PC, with NIC2 streaming on all three tablets.
+
     python bench/check_streams.py
     python bench/check_streams.py --seconds 30
 """
@@ -17,6 +19,7 @@ import pylsl
 
 HERE = Path(__file__).resolve().parent
 MAX_REASONABLE_DELAY_S = 1.0
+NIC2_KINDS = ("EEG", "Accelerometer", "Quality", "Markers")
 
 
 def parse_args():
@@ -31,7 +34,7 @@ def expected_streams(config_path):
     if not config_path.exists():
         return []
     devices = json.loads(config_path.read_text()).get("devices", [])
-    return [f"{d['name']}-{kind}" for d in devices for kind in ("EEG", "Accelerometer")]
+    return [f"{d['name']}-{kind}" for d in devices for kind in NIC2_KINDS]
 
 
 def main():
@@ -39,7 +42,8 @@ def main():
     print(f"Looking for LSL streams for {args.wait:.0f} s...")
     infos = sorted(pylsl.resolve_streams(wait_time=args.wait), key=lambda i: i.name())
     if not infos:
-        print("No streams found. Check that the streamers are running and the firewall allows LSL.")
+        print("No streams found. Check that NIC2 is streaming LSL on each tablet, the tablets are on the wired\n"
+              "network, and the firewall allows NIC2 and python.")
         return
 
     print(f"\n{'name':<32} {'type':<14} {'ch':>3} {'rate':>7}  host")
@@ -50,9 +54,15 @@ def main():
     missing = [n for n in expected_streams(args.config) if n not in names]
     if missing:
         print(f"\nMissing expected streams: {', '.join(missing)}")
-    not_synced = [n for n in names if "NOT_SYNCED" in n.upper()]
-    if not_synced:
-        print(f"\nStill synchronizing (wait before recording): {', '.join(not_synced)}")
+    participants = {n.rsplit("-", 1)[0] for n in expected_streams(args.config)}
+    hosts = {}
+    for info in infos:
+        pid = info.name().rsplit("-", 1)[0]
+        if pid in participants:
+            hosts.setdefault(pid, set()).add(info.hostname())
+    shared = [h for h in set().union(set(), *hosts.values()) if sum(h in hs for hs in hosts.values()) > 1]
+    if shared:
+        print(f"\nSeveral participants stream from the same computer: {', '.join(shared)}")
 
     print(f"\nReading all streams for {args.seconds:.0f} s...")
     inlets = []
@@ -63,16 +73,19 @@ def main():
 
     counts = {info.name(): 0 for info, _, _ in inlets}
     last_ts = {}
+    for info, inlet, _ in inlets:  # drop what piled up while the inlets were opening
+        while True:
+            _, stamps = inlet.pull_chunk(timeout=0.0, max_samples=4096)
+            if not stamps:
+                break
+            last_ts[info.name()] = stamps[-1]
     t_end = time.monotonic() + args.seconds
-    first_pull = True
     while time.monotonic() < t_end:
         for info, inlet, _ in inlets:
             _, stamps = inlet.pull_chunk(timeout=0.0, max_samples=4096)
-            if stamps and not first_pull:  # first pull drains the backlog
-                counts[info.name()] += len(stamps)
             if stamps:
+                counts[info.name()] += len(stamps)
                 last_ts[info.name()] = stamps[-1]
-        first_pull = False
         time.sleep(0.05)
     now = pylsl.local_clock()
 
@@ -84,11 +97,13 @@ def main():
         if name in last_ts:
             delay = now - (last_ts[name] + correction)
             delay_txt = f"{delay * 1000:11.1f}"
-            if abs(delay) > MAX_REASONABLE_DELAY_S:
+            period = 1 / info.nominal_srate() if info.nominal_srate() > 0 else 0.0
+            if abs(delay) > MAX_REASONABLE_DELAY_S + period:  # slow streams lag by up to one sample
                 problems.append(f"{name}: timestamps are {delay:.1f} s away from the LSL clock")
         else:
             delay_txt = f"{'no data':>11}"
-            problems.append(f"{name}: no samples received")
+            if info.nominal_srate() > 0:  # irregular streams (markers) are often silent
+                problems.append(f"{name}: no samples received")
         nominal = info.nominal_srate()
         if nominal > 0 and name in last_ts and abs(measured - nominal) / nominal > 0.05:
             problems.append(f"{name}: measured {measured:.1f} Hz vs nominal {nominal:.1f} Hz")
