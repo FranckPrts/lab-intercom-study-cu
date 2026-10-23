@@ -11,17 +11,17 @@ one file on one timeline.
 
 ## Approach
 
-- **One tablet per participant, connected by USB cable.** Each Enobio is
-  plugged into its own Windows tablet running Neuroelectrics' NIC2. NIC2 handles the device connection,
-  signal quality and clock synchronization, and publishes the data as LSL
-  streams.
+- **One computer per participant.** Each participant's Enobio is plugged by
+  USB cable into its own Windows computer running Neuroelectrics' NIC2. NIC2
+  handles the device connection, signal quality and clock synchronization, and
+  publishes the data as LSL streams. The participant's respiration and
+  heart-rate sensors connect to the same computer over Bluetooth.
 - **One main computer for everything else.** It runs the experimental paradigm
-  shown to participants, records all streams with LabRecorder, and hosts any
-  other data collection.
-- **Everything wired, no Wi-Fi.** Enobios connect to their tablets over USB,
-  and the tablets connect to the main computer over a wired local network
-  (Ethernet). The router only provides that wired network; no Wi-Fi is used
-  for now.
+  shown to participants and records all streams with LabRecorder.
+- **Wired network.** The participant computers connect over Ethernet to a
+  switch, and that switch to the router. The router also connects a second
+  switch for the room's cameras, and the main computer. The router's Wi-Fi is
+  not used.
 - **LSL (Lab Streaming Layer) as the common language.** Every source publishes
   LSL streams on the local network; LabRecorder saves them together in one XDF
   file, with the clock offsets needed to put all computers on one timeline.
@@ -31,28 +31,36 @@ one file on one timeline.
 ```mermaid
 flowchart LR
     subgraph P1 [Participant 1]
-        E1[Enobio 32 · P1]
+        E1[Enobio 32]
+        B1["Respiration + heart rate"]
     end
     subgraph P2 [Participant 2]
-        E2[Enobio 32 · P2]
+        E2[Enobio 32]
+        B2["Respiration + heart rate"]
     end
     subgraph P3 [Participant 3]
-        E3[Enobio 32 · P3]
+        E3[Enobio 32]
+        B3["Respiration + heart rate"]
     end
 
-    E1 -- "USB cable" --> T1[Tablet 1<br/>NIC2]
-    E2 -- "USB cable" --> T2[Tablet 2<br/>NIC2]
-    E3 -- "USB cable" --> T3[Tablet 3<br/>NIC2]
+    E1 -- "USB cable" --> C1[Computer 1<br/>NIC2]
+    B1 -. "Bluetooth" .-> C1
+    E2 -- "USB cable" --> C2[Computer 2<br/>NIC2]
+    B2 -. "Bluetooth" .-> C2
+    E3 -- "USB cable" --> C3[Computer 3<br/>NIC2]
+    B3 -. "Bluetooth" .-> C3
 
-    T1 -- "Ethernet · LSL" --> SW[(Wired local network<br/>router, Ethernet only)]
-    T2 -- "Ethernet · LSL" --> SW
-    T3 -- "Ethernet · LSL" --> SW
+    C1 -- "Ethernet · LSL" --> SW1[Switch]
+    C2 -- "Ethernet · LSL" --> SW1
+    C3 -- "Ethernet · LSL" --> SW1
 
-    PHYS["Respiration / heart rate<br/>⚠️ devices TBD"] -. "LSL" .-> SW
+    SW1 -- "Ethernet · LSL" --> R[(Router<br/>Ethernet only)]
+    R -- "Ethernet" --- SW2[PoE switch]
+    SW2 --- CAMS["4 × GeoVision IP cameras<br/>⚠️ recording TBD"]
 
-    SW -- "Ethernet · LSL" --> MAIN
+    R -- "Ethernet · LSL" --> MAIN
 
-    subgraph MAIN [Main computer]
+    subgraph MAIN [Main computer · Mac]
         EXP["Experiment software<br/>⚠️ TBD<br/>paradigm + event markers"]
         LR["LabRecorder<br/>→ one .xdf per session"]
         EXP -- "markers (LSL)" --> LR
@@ -65,23 +73,27 @@ flowchart LR
 
 | Where | What | Role |
 |---|---|---|
-| Participant | Enobio 32 (×3, labelled P1–P3) | 32-channel EEG + accelerometer, connected to its tablet by USB cable. |
-| Tablet (×3) | NIC2 | Connects to its Enobio over USB, runs the synchronizer ⚠️, publishes `Pn-EEG`, `Pn-Accelerometer`, `Pn-Quality`, `Pn-Markers` over LSL. Also saves its own file as a backup. |
-| Tablet ↔ main computer | Wired local network (router, USB Ethernet adapters) | Carries LSL. The router's Wi-Fi is not used. Neuroelectrics recommends a wired network when LSL is on. |
-| Main computer | Experiment software ⚠️ | Shows the paradigm to participants and sends event markers as an LSL stream. |
-| Main computer | LabRecorder | Records every LSL stream (EEG, markers, physiology) into one XDF file per session. |
-| Main computer | Other LSL sources ⚠️ | Respiration and heart-rate devices, connected here or elsewhere on the network. |
+| Participant | Enobio 32 (×3, labelled P1–P3) | 32-channel EEG + accelerometer, connected to its computer by USB cable. |
+| Participant | Respiration and heart-rate sensors ⚠️ (one set per participant) | Connected to the participant's computer over Bluetooth, published as LSL streams. |
+| Participant computer (×3) | NIC2 | Connects to its Enobio over USB, runs the synchronizer ⚠️, publishes `Pn-EEG`, `Pn-Accelerometer`, `Pn-Quality`, `Pn-Markers` over LSL. Also saves its own file as a backup. Also receives the participant's respiration and heart-rate sensors. |
+| Network | Switch for the participant computers, router, PoE switch for the cameras | Carries LSL. The router's Wi-Fi is not used. Neuroelectrics recommends a wired network when LSL is on. |
+| Room | 4 × GeoVision IP cameras | Powered and connected by the PoE switch, on the same network. How they are recorded is still open ⚠️. |
+| Main computer (Mac) | Experiment software ⚠️ | Shows the paradigm to participants and sends event markers as an LSL stream. |
+| Main computer (Mac) | LabRecorder | Records every LSL stream (EEG, markers, physiology) into one XDF file per session. |
 
 ### How timing works
 
-1. **Enobio → tablet:** NIC2's synchronizer aligns each Enobio's clock to its
-   tablet. It takes a few minutes after connecting; NIC2 blocks recording until
-   it is accurate enough. Neuroelectrics documents it for Wi-Fi; whether it
-   runs the same way over USB still has to be confirmed ⚠️.
-2. **Tablet → main computer:** LSL measures the clock offset between each
-   tablet and the main computer throughout the recording, and LabRecorder
-   stores it in the file.
-3. **Analysis:** loading the XDF file applies those offsets, so all three
+1. **Enobio → participant computer:** NIC2's synchronizer aligns each Enobio's
+   clock to its computer. It takes a few minutes after connecting; NIC2 blocks
+   recording until it is accurate enough. Neuroelectrics documents it for
+   Wi-Fi; whether it runs the same way over USB still has to be confirmed ⚠️.
+2. **Respiration / heart rate → participant computer:** Bluetooth devices
+   often timestamp samples when they arrive at the computer, not when they are
+   measured, which adds a delay ⚠️.
+3. **Participant computer → main computer:** LSL measures the clock offset
+   between each participant computer and the main computer throughout the
+   recording, and LabRecorder stores it in the file.
+4. **Analysis:** loading the XDF file applies those offsets, so all three
    participants, the task events and the physiology share one timeline.
 
 Whether step 1 produces timestamps that LSL can use directly is what the bench
@@ -92,26 +104,21 @@ test checks ⚠️.
 | Path | Contents |
 |---|---|
 | [`bench/`](bench/README.md) | Bench test: procedure, stream check (`check_streams.py`) and recording analysis (`analyze_recording.py`) |
-| [`BACKLOG.md`](BACKLOG.md) | Everything still to do, decide or ask, and what is already decided |
-| [`AV_SYSTEM.md`](AV_SYSTEM.md) | Questions for the lab assistant about the testing room's cameras, microphones, displays and network, and how we could use them |
 | `environment.yml` | Conda environment `lab-intercom-study-cu` for our Python tools |
 | `.vscode/tasks.json` | VS Code tasks to set up the environment and run the bench scripts |
 
 Our Python tools run on the main computer only; nothing from this repository
-is installed on the tablets.
+is installed on the participant computers.
 
 ## Open points
-
-Details and the full list are in [BACKLOG.md](BACKLOG.md).
 
 **Validate the setup**
 - ⚠️ Confirm NIC2 connects to an Enobio over USB and that its synchronizer
   works (or is needed) over USB.
-- ⚠️ Tablet ports: each tablet needs USB for the Enobio and for the Ethernet
-  adapter, possibly power too. Check the ports, or plan a hub.
-- ⚠️ Electrical safety of a participant cabled to a tablet: keep tablets on
-  battery during recording, or check with Neuroelectrics / the ethics board.
-- ⚠️ Run the bench test (three tablets + main computer) and fill in the results.
+- ⚠️ Electrical safety of a participant cabled by USB to a computer: check
+  with Neuroelectrics / the ethics board.
+- ⚠️ Run the bench test (three participant computers + main computer) and
+  fill in the results.
 - ⚠️ Confirm NIC2's LSL timestamps are on the LSL clock once its synchronizer is done.
 - ⚠️ Millisecond-level timing check across the three Enobios (shared electrical
   test signal), and a short timing check to run at every session.
@@ -123,19 +130,25 @@ Details and the full list are in [BACKLOG.md](BACKLOG.md).
 - ⚠️ Measure the delay between a marker and the moment the stimulus is
   actually on screen (e.g. photodiode).
 
-**Other data collection**
-- ⚠️ Respiration and heart-rate devices: make/model, how many, sampling
-  rates, timestamping, and which computer they connect to.
+**Respiration and heart rate**
+- ⚠️ Make/model of the sensors, sampling rates, and whether they timestamp at
+  measurement or on arrival over Bluetooth.
+- ⚠️ Add them to the bench test: check they appear in LSL and record next to
+  the EEG.
 
-**AV system in the testing room** (questions in [AV_SYSTEM.md](AV_SYSTEM.md))
-- ⚠️ What the cameras' Ethernet cables carry (NDI, NDI|HX, RTSP, HDBaseT, ...)
-  and whether we can record video and audio in sync with the EEG.
+**Lab network**
+- ⚠️ LabRecorder on the Mac does not see NIC2's streams since a switch was
+  added.
+- ⚠️ The cameras are on a different subnet from the rest of the network and
+  must be moved onto it.
+
+**AV system in the testing room**
+- ⚠️ How to record the GeoVision cameras (and audio) in sync with the EEG.
 - ⚠️ How the main computer drives the room display(s), and their delay.
-- ⚠️ Our own router for LSL, or the lab's network.
 
 **Session operation**
 - ⚠️ Cable length and routing, so participants can move as the paradigm needs.
-- ⚠️ Per-tablet session checklist and a single "all ready" start.
+- ⚠️ Per-computer session checklist and a single "all ready" start.
 - ⚠️ Recording conventions: file naming, IDs, storage, NIC2 backup files.
 - ⚠️ Channel labels for the 32-channel montage.
 
