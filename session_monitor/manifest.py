@@ -65,7 +65,8 @@ class Slot:
     required: bool = True
 
     def matches(self, stream_name, host):
-        return stream_name == self.stream_name and host == self.host
+        """Exact stream name; host ignoring case (Windows computer names are case-insensitive)."""
+        return stream_name == self.stream_name and host.casefold() == self.host.casefold()
 
 
 @dataclass(frozen=True)
