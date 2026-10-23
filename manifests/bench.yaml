@@ -1,0 +1,57 @@
+# Bench test manifest: what the recording Mac expects on the LSL network.
+# Check it with the VS Code task "Manifest: check", or:
+#   python -m session_monitor.manifest manifests/bench.yaml
+
+# Identifiers typed in before recording. Proposed fields, pending the paradigm
+# team's answer ("Recording identifiers" doc). `pattern` is a regular
+# expression the value must match; `example` is shown as a hint.
+session_fields:
+  - key: group
+    label: Group
+    pattern: 'G\d{2}'
+    example: G01
+  - key: session
+    label: Session
+    pattern: '\d{2}'
+    example: '01'
+  - key: task
+    label: Task
+    pattern: '[a-z][a-z0-9]*'
+    example: baseline
+  - key: condition
+    label: Condition
+    pattern: '[a-z][a-z0-9]*'
+    example: eyesopen
+  - key: p1
+    label: Participant on seat P1
+    pattern: 'S\d{3}'
+    example: S014
+  - key: p2
+    label: Participant on seat P2
+    pattern: 'S\d{3}'
+    example: S027
+  - key: p3
+    label: Participant on seat P3
+    pattern: 'S\d{3}'
+    example: S031
+  - key: operator
+    label: Operator
+    pattern: '[A-Z]{2,3}'
+    example: FP
+  - key: notes
+    label: Notes
+    required: false
+
+# XDF file name (without .xdf). {run} is counted by the recorder (01, 02, ...).
+filename: 'grp-{group}_ses-{session}_task-{task}_cond-{condition}_run-{run}'
+
+# Expected LSL streams. A slot matches a stream by its exact name AND the
+# computer name it comes from (as `bench/check_streams.py` prints in "host").
+# TABLET-n are placeholders: replace them with the real NIC2 computer names.
+slots:
+  - {id: P1-EEG,     seat: P1, label: P1 EEG,            stream_name: P1-EEG,     host: TABLET-1}
+  - {id: P1-Quality, seat: P1, label: P1 signal quality, stream_name: P1-Quality, host: TABLET-1}
+  - {id: P2-EEG,     seat: P2, label: P2 EEG,            stream_name: P2-EEG,     host: TABLET-2}
+  - {id: P2-Quality, seat: P2, label: P2 signal quality, stream_name: P2-Quality, host: TABLET-2}
+  - {id: P3-EEG,     seat: P3, label: P3 EEG,            stream_name: P3-EEG,     host: TABLET-3}
+  - {id: P3-Quality, seat: P3, label: P3 signal quality, stream_name: P3-Quality, host: TABLET-3}

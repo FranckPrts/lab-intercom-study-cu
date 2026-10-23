@@ -9,6 +9,7 @@ dependencies:
   - python=3.12
   - numpy
   - pyxdf>=1.16
+  - pyyaml
   - pip
   - pip:
       - pylsl>=1.16  # not current on conda-forge; the pip wheel bundles liblsl

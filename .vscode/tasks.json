@@ -27,6 +27,14 @@
       "problemMatcher": []
     },
     {
+      "label": "Manifest: check",
+      "detail": "Validate a session manifest and print its fields, example file name and slots",
+      "type": "shell",
+      "command": "conda run --no-capture-output --name lab-intercom-study-cu python -m session_monitor.manifest \"${input:manifestPath}\"",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
       "label": "Bench: check streams",
       "detail": "List the NIC2 LSL streams and measure rates and timestamp delays (recording PC)",
       "type": "shell",
@@ -44,6 +52,12 @@
     }
   ],
   "inputs": [
+    {
+      "id": "manifestPath",
+      "type": "promptString",
+      "description": "Path to the session manifest",
+      "default": "manifests/bench.yaml"
+    },
     {
       "id": "xdfPath",
       "type": "promptString",
