@@ -12,9 +12,9 @@
     },
     {
       "label": "Env: update",
-      "detail": "Sync the existing env after environment.yml changes (use Env: create the first time)",
+      "detail": "Rebuild the env from environment.yml after it changes (conda env update skips new packages' dependencies on conda 24.11)",
       "type": "shell",
-      "command": "conda env update --name lab-intercom-study-cu --file environment.yml --prune",
+      "command": "conda env create --file environment.yml --yes",
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": []
     },
@@ -31,6 +31,30 @@
       "detail": "Validate a session manifest and print its fields, example file name and slots",
       "type": "shell",
       "command": "conda run --no-capture-output --name lab-intercom-study-cu python -m session_monitor.manifest \"${input:manifestPath}\"",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Session: GUI",
+      "detail": "Browser page at http://127.0.0.1:8080: slot cards, identifiers, record/stop, notes, live log (Ctrl+C here quits)",
+      "type": "shell",
+      "command": "conda run --no-capture-output --name lab-intercom-study-cu python -u -m session_monitor.gui \"${input:manifestPath}\" --out data",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Session: terminal",
+      "detail": "Monitor a manifest's streams, confirm slots, record with LabRecorderCLI (type ? for commands)",
+      "type": "shell",
+      "command": "conda run --no-capture-output --name lab-intercom-study-cu python -u -m session_monitor.cli \"${input:manifestPath}\" --out data",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Fakes: publish bench streams",
+      "detail": "Rehearse without tablets: fake NIC2 streams from manifests/bench.yaml + data/bench_local.yaml (hosts = this computer)",
+      "type": "shell",
+      "command": "conda run --no-capture-output --name lab-intercom-study-cu python -m session_monitor.fakes manifests/bench.yaml --local-manifest data/bench_local.yaml",
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": []
     },

@@ -1,7 +1,8 @@
 # Conda environment for the study tooling (bench test, stream checks, analysis).
 # VS Code: run the task "Env: create" once, then "Env: update" after editing this file.
-# Terminal: conda env create --file environment.yml  (first time)
-#           conda env update --name lab-intercom-study-cu --file environment.yml --prune
+# Terminal: conda env create --file environment.yml        (first time)
+#           conda env create --file environment.yml --yes  (after changes: rebuilds the env;
+#           `conda env update` skipped new packages' dependencies on conda 24.11)
 name: lab-intercom-study-cu
 channels:
   - conda-forge
@@ -10,6 +11,7 @@ dependencies:
   - numpy
   - pyxdf>=1.16
   - pyyaml
+  - nicegui>=3
   - pip
   - pip:
       - pylsl>=1.16  # not current on conda-forge; the pip wheel bundles liblsl

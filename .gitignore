@@ -5,3 +5,6 @@
 __pycache__/
 bench/devices.json
 .private_notes/
+
+# Recordings, logs and generated manifests (session_monitor output)
+data/

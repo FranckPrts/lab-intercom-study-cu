@@ -52,8 +52,9 @@ class Session:
         self.events.event("monitor_stop")
         self.events.close()
 
-    def note(self, text):
-        return self.events.event("note", text=text.strip(), recording=self.recording)
+    def note(self, text, ts=None):
+        """ts: LSL time the note was typed (default: now)."""
+        return self.events.event("note", ts=ts, text=text.strip(), recording=self.recording)
 
     def blockers(self, values):
         """Reasons recording cannot start now (empty list = ready)."""
