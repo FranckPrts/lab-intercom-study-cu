@@ -47,7 +47,10 @@ filename: 'grp-{group}_ses-{session}_task-{task}_cond-{condition}_run-{run}'
 
 # Expected LSL streams. A slot matches a stream by its exact name AND the
 # computer name it comes from (as `bench/check_streams.py` prints in "host").
-# TABLET-n are placeholders: replace them with the real NIC2 computer names.
+# TABLET-n are placeholders: replace them with the real NIC2 computer names
+# (`bench/check_streams.py` prints the names to use).
+# Accelerometers are optional: recorded when present, for the bench tap test
+# (timing between devices); they never block Start.
 slots:
   - {id: P1-EEG,     seat: P1, label: P1 EEG,            stream_name: P1-EEG,     host: TABLET-1}
   - {id: P1-Quality, seat: P1, label: P1 signal quality, stream_name: P1-Quality, host: TABLET-1}
@@ -55,3 +58,6 @@ slots:
   - {id: P2-Quality, seat: P2, label: P2 signal quality, stream_name: P2-Quality, host: TABLET-2}
   - {id: P3-EEG,     seat: P3, label: P3 EEG,            stream_name: P3-EEG,     host: TABLET-3}
   - {id: P3-Quality, seat: P3, label: P3 signal quality, stream_name: P3-Quality, host: TABLET-3}
+  - {id: P1-Accelerometer, seat: P1, label: P1 accelerometer, stream_name: P1-Accelerometer, host: TABLET-1, required: false}
+  - {id: P2-Accelerometer, seat: P2, label: P2 accelerometer, stream_name: P2-Accelerometer, host: TABLET-2, required: false}
+  - {id: P3-Accelerometer, seat: P3, label: P3 accelerometer, stream_name: P3-Accelerometer, host: TABLET-3, required: false}

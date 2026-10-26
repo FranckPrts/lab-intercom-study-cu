@@ -236,9 +236,9 @@ def main(argv=None):
     except ValueError as e:
         print(f"\nExample file name: cannot build from the examples ({e})")
     print(f"\nSlots ({len(m.required_slots)} required of {len(m.slots)}):")
-    print(f"  {'id':<14} {'seat':<6} {'stream name':<20} {'host':<20} required")
+    print(f"  {'id':<18} {'seat':<6} {'stream name':<20} {'host':<20} required")
     for s in m.slots:
-        print(f"  {s.id:<14} {s.seat:<6} {s.stream_name:<20} {s.host:<20} {'yes' if s.required else 'no'}")
+        print(f"  {s.id:<18} {s.seat:<6} {s.stream_name:<20} {s.host:<20} {'yes' if s.required else 'no'}")
     return 0
 
 

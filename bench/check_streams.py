@@ -5,36 +5,68 @@ reports the measured sampling rate and the delay between each sample's
 timestamp and this computer's LSL clock. A delay of seconds or more means a
 stream's timestamps are not on the LSL clock and cannot be aligned as-is.
 
-Run it on the recording PC, with NIC2 streaming on all three tablets.
+It also compares the streams with a session manifest, and when a slot's
+stream comes from another computer than the manifest says, prints the host
+name to put in the manifest (how to find the tablets' real names on the day).
+
+Run it on the recording computer, with NIC2 streaming on all three tablets.
 
     python bench/check_streams.py
-    python bench/check_streams.py --seconds 30
+    python bench/check_streams.py --manifest manifests/bench.yaml --seconds 30
 """
 import argparse
-import json
+import sys
 import time
 from pathlib import Path
 
 import pylsl
 
-HERE = Path(__file__).resolve().parent
+REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO))
+from session_monitor.manifest import ManifestError, load_manifest  # noqa: E402
+
 MAX_REASONABLE_DELAY_S = 1.0
-NIC2_KINDS = ("EEG", "Accelerometer", "Quality", "Markers")
 
 
 def parse_args():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--wait", type=float, default=5.0, help="Seconds to look for streams (default: 5)")
     p.add_argument("--seconds", type=float, default=10.0, help="Seconds to read data for (default: 10)")
-    p.add_argument("--config", type=Path, default=HERE / "devices.json", help="Device list used to check expected streams")
+    p.add_argument("--manifest", type=Path, default=REPO / "manifests" / "bench.yaml",
+                   help="session manifest to compare with (default: manifests/bench.yaml)")
     return p.parse_args()
 
 
-def expected_streams(config_path):
-    if not config_path.exists():
-        return []
-    devices = json.loads(config_path.read_text()).get("devices", [])
-    return [f"{d['name']}-{kind}" for d in devices for kind in NIC2_KINDS]
+def compare_with_manifest(manifest, infos):
+    """Print, per slot, whether its stream is on the expected host; suggest host values."""
+    print(f"\nCompared with {manifest.path}:")
+    suggestions, seat_hosts = {}, {}
+    for slot in manifest.slots:
+        found = [i for i in infos if i.name() == slot.stream_name]
+        here = [i for i in found if i.hostname().casefold() == slot.host.casefold()]
+        req = "" if slot.required else " (optional)"
+        if len(here) == 1:
+            verdict = f"OK on {slot.host}"
+            seat_hosts.setdefault(slot.seat, set()).add(here[0].hostname())
+        elif len(here) > 1:
+            verdict = f"{len(here)} streams with this name on {slot.host}"
+        elif found:
+            hosts = sorted({i.hostname() for i in found})
+            verdict = f"found on {', '.join(hosts)}, manifest says {slot.host}"
+            if len(hosts) == 1:
+                suggestions[slot.id] = hosts[0]
+                seat_hosts.setdefault(slot.seat, set()).add(hosts[0])
+        else:
+            verdict = "not on the network"
+        print(f"  {slot.id:<20} {verdict}{req}")
+    if suggestions:
+        print(f"\nPut these host names in {manifest.path} (slots section):")
+        for sid, host in suggestions.items():
+            print(f"  {sid:<20} host: {host}")
+    shared = {h for hs in seat_hosts.values() for h in hs
+              if sum(h in other for other in seat_hosts.values()) > 1}
+    if shared:
+        print(f"\nSeveral seats stream from the same computer: {', '.join(sorted(shared))}")
 
 
 def main():
@@ -50,19 +82,10 @@ def main():
     for info in infos:
         print(f"{info.name():<32} {info.type():<14} {info.channel_count():>3} {info.nominal_srate():>7.1f}  {info.hostname()}")
 
-    names = {i.name() for i in infos}
-    missing = [n for n in expected_streams(args.config) if n not in names]
-    if missing:
-        print(f"\nMissing expected streams: {', '.join(missing)}")
-    participants = {n.rsplit("-", 1)[0] for n in expected_streams(args.config)}
-    hosts = {}
-    for info in infos:
-        pid = info.name().rsplit("-", 1)[0]
-        if pid in participants:
-            hosts.setdefault(pid, set()).add(info.hostname())
-    shared = [h for h in set().union(set(), *hosts.values()) if sum(h in hs for hs in hosts.values()) > 1]
-    if shared:
-        print(f"\nSeveral participants stream from the same computer: {', '.join(shared)}")
+    try:
+        compare_with_manifest(load_manifest(args.manifest), infos)
+    except ManifestError as e:
+        print(f"\n(manifest not compared: {e})")
 
     print(f"\nReading all streams for {args.seconds:.0f} s...")
     inlets = []

@@ -34,6 +34,7 @@ log = logging.getLogger("session_monitor.fakes")
 KINDS = {
     "-EEG": (32, 500.0, "EEG"),
     "-Quality": (32, 1.0, "Quality"),
+    "-Accelerometer": (3, 100.0, "Accelerometer"),  # rate is a guess; check NIC2's
 }
 DEFAULT_KIND = (1, 100.0, "Misc")
 

@@ -49,13 +49,13 @@ def parse_args(argv):
 
 
 def slot_table(session):
-    lines = [f"  {'':2} {'slot':<14} {'state':<9} {'rate':>7}  {'stream @ host':<36} detail"]
+    lines = [f"  {'':2} {'slot':<18} {'state':<9} {'rate':>7}  {'stream @ host':<36} detail"]
     for st in session.monitor.snapshot():
         s = st.slot
         rate = f"{st.rate:.0f}/s" if st.rate is not None else "-"
         where = f"{s.stream_name} @ {st.found.host if st.found else s.host}"
         req = "" if s.required else " (optional)"
-        lines.append(f"  {STATE_MARK[st.state]:2} {s.id:<14} {st.state.value:<9} {rate:>7}  {where:<36} {st.detail}{req}")
+        lines.append(f"  {STATE_MARK[st.state]:2} {s.id:<18} {st.state.value:<9} {rate:>7}  {where:<36} {st.detail}{req}")
     extras = session.monitor.extras()
     if extras:
         lines.append("  not in the manifest: " + ", ".join(f"{f.name} @ {f.host}" for f in extras))
