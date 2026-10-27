@@ -4,7 +4,9 @@ A manifest is a YAML file with three parts:
 
     session_fields   identifiers typed in before recording (group, session, task, ...)
     filename         template for XDF file names, built from those fields + {run}
-    slots            the LSL streams expected, each matched by stream name + host
+    slots            the LSL streams expected, each matched by stream name + host;
+                     `needs_data: false` for event streams (markers) that may stay silent:
+                     present as soon as the stream is on the network
 
 Check a manifest from the terminal:
 
@@ -24,7 +26,7 @@ RUN_KEY = "run"  # counted by the recorder, not typed in
 
 TOP_KEYS = {"session_fields", "filename", "slots"}
 FIELD_KEYS = {"key", "label", "required", "pattern", "example", "help"}
-SLOT_KEYS = {"id", "seat", "label", "stream_name", "host", "required"}
+SLOT_KEYS = {"id", "seat", "label", "stream_name", "host", "required", "needs_data"}
 
 
 class ManifestError(Exception):
@@ -63,6 +65,7 @@ class Slot:
     stream_name: str
     host: str
     required: bool = True
+    needs_data: bool = True  # False: present once listed, even with no samples
 
     def matches(self, stream_name, host):
         """Exact stream name; host ignoring case (Windows computer names are case-insensitive)."""
@@ -181,7 +184,7 @@ def _parse_slots(raw, problems):
             continue
         slot = Slot(id=sid, seat=str(item.get("seat", "")).strip(), label=str(item.get("label", sid)),
                     stream_name=str(item["stream_name"]).strip(), host=str(item["host"]).strip(),
-                    required=bool(item.get("required", True)))
+                    required=bool(item.get("required", True)), needs_data=bool(item.get("needs_data", True)))
         if sid in ids:
             problems.append(f"{where}: duplicate slot id '{sid}'")
             continue
@@ -236,9 +239,10 @@ def main(argv=None):
     except ValueError as e:
         print(f"\nExample file name: cannot build from the examples ({e})")
     print(f"\nSlots ({len(m.required_slots)} required of {len(m.slots)}):")
-    print(f"  {'id':<18} {'seat':<6} {'stream name':<20} {'host':<20} required")
+    print(f"  {'id':<22} {'seat':<6} {'stream name':<22} {'host':<16} required")
     for s in m.slots:
-        print(f"  {s.id:<18} {s.seat:<6} {s.stream_name:<20} {s.host:<20} {'yes' if s.required else 'no'}")
+        print(f"  {s.id:<22} {s.seat:<6} {s.stream_name:<22} {s.host:<16} {'yes' if s.required else 'no'}"
+              + ("" if s.needs_data else "  (presence only)"))
     return 0
 
 

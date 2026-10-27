@@ -47,6 +47,10 @@ def _xpath_string(value):
     raise RecorderError(f"stream name or host contains both quote kinds: {value!r}")
 
 
+def source_query(source_id):
+    return f"source_id={_xpath_string(source_id)}"
+
+
 def stream_query(name, hostname):
     return f"name={_xpath_string(name)} and hostname={_xpath_string(hostname)}"
 
@@ -63,15 +67,14 @@ class LabRecorderCLI:
     def running(self):
         return self.proc is not None and self.proc.poll() is None
 
-    def start(self, xdf_path, streams, timeout=20.0):
-        """streams: [(name, hostname), ...] exactly as LSL reports them.
+    def start(self, xdf_path, queries, timeout=20.0):
+        """queries: one LSL query per stream (stream_query / source_query), each matching one stream.
         Returns once every stream is recording; raises RecorderError otherwise."""
         if self.running:
             raise RecorderError("already recording")
         self.path = Path(xdf_path)
         if self.path.exists():
             raise RecorderError(f"{self.path} already exists")
-        queries = [stream_query(n, h) for n, h in streams]
         self.output = []
         self._lines = queue.Queue()
         self.proc = subprocess.Popen([self.exe, str(self.path), *queries], stdin=subprocess.PIPE,
@@ -80,7 +83,7 @@ class LabRecorderCLI:
 
         started, no_match = 0, []
         t_end = time.monotonic() + timeout
-        while started < len(streams):
+        while started < len(queries):
             try:
                 line = self._lines.get(timeout=0.2)
             except queue.Empty:
@@ -96,8 +99,8 @@ class LabRecorderCLI:
                 raise RecorderError(f"LabRecorderCLI exited (code {self.proc.returncode}) before recording")
             if time.monotonic() > t_end:
                 self.stop(timeout=10)
-                raise RecorderError(f"only {started} of {len(streams)} streams started recording in {timeout:.0f} s")
-        log.info("recording %d stream(s) to %s", len(streams), self.path.name)
+                raise RecorderError(f"only {started} of {len(queries)} streams started recording in {timeout:.0f} s")
+        log.info("recording %d stream(s) to %s", len(queries), self.path.name)
 
     def stop(self, timeout=60.0):
         """Send Enter, wait for exit and for the file to stop changing. Returns the exit code."""

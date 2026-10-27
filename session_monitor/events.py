@@ -20,15 +20,17 @@ OWN_SOURCE_PREFIX = "session-monitor-"  # source_id prefix of every stream this 
 
 class EventLog:
     def __init__(self, out_dir, host):
+        started = datetime.now()
         self.stream_name = f"SessionMonitor-{host}-Markers"
-        self.source_id = f"{OWN_SOURCE_PREFIX}{host}-markers"
+        # unique per run: another monitor on this computer (or a leftover one) publishes the same name
+        self.source_id = f"{OWN_SOURCE_PREFIX}{host}-markers-{started:%Y%m%d_%H%M%S}"
         info = pylsl.StreamInfo(self.stream_name, "Markers", 1, 0, pylsl.cf_string, self.source_id)
         info.desc().append_child_value("manufacturer", "session_monitor")
         self.outlet = pylsl.StreamOutlet(info)
 
         out_dir = Path(out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
-        self.csv_path = out_dir / f"{datetime.now():%Y%m%d_%H%M%S}_{host}_events.csv"
+        self.csv_path = out_dir / f"{started:%Y%m%d_%H%M%S}_{host}_events.csv"
         self._file = open(self.csv_path, "w", newline="")
         self._csv = csv.writer(self._file)
         self._csv.writerow(["lsl_time", "wall_time", "event"])

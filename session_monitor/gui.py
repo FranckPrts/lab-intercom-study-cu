@@ -1,4 +1,4 @@
-"""NiceGUI front end: slot cards, confirm buttons, identifiers, record/stop, notes, live log.
+"""NiceGUI front end: streams table, confirm buttons, identifiers, record/stop, notes, live log.
 
     python -m session_monitor.gui manifests/bench.yaml
     python -m session_monitor.gui manifests/bench.yaml --set operator=FP --port 8080
@@ -25,6 +25,14 @@ from .session import Session
 
 STATE_COLOR = {SlotState.CONFIRMED: "positive", SlotState.PRESENT: "primary", SlotState.SILENT: "warning",
                SlotState.MISMATCH: "negative", SlotState.MISSING: "negative"}
+# Quasar's default palette, for tinting the table cells and the recording panel like the badges
+HEX = {"positive": "#21ba45", "primary": "#1976d2", "warning": "#f2c037", "negative": "#c10015", "grey": "#9e9e9e"}
+# worst first: the recording panel takes the color of the worst required stream
+SEVERITY = [SlotState.MISSING, SlotState.MISMATCH, SlotState.SILENT, SlotState.PRESENT, SlotState.CONFIRMED]
+
+
+def tint(color):
+    return f"background: {HEX[color]}1f; border: 2px solid {HEX[color]}"
 
 
 class LogBuffer(logging.Handler):
@@ -58,6 +66,14 @@ class State:
         return {k: v.strip() for k, v in self.values.items() if v and v.strip()}
 
 
+def stream_kind(slot):
+    """Row name in the streams table: the label without its seat prefix ("P1 EEG" -> "EEG")."""
+    if slot.seat and slot.label.startswith(slot.seat + " "):
+        kind = slot.label[len(slot.seat) + 1:]
+        return kind[:1].upper() + kind[1:]
+    return slot.label
+
+
 def build_page(state):
     session = state.session
     manifest = session.manifest
@@ -68,53 +84,75 @@ def build_page(state):
         ui.label(f"Session monitor · {manifest.path.name} · {session.host}").classes("text-lg")
         status = ui.badge("IDLE", color="grey").classes("text-base q-px-md q-py-xs")
 
-    with ui.row().classes("w-full items-start no-wrap gap-4"):
-        # ---------------------------------------------------------- left: identifiers + recording
-        with ui.column().classes("w-96 gap-4"):
-            with ui.card().classes("w-full"):
-                ui.label("Session identifiers").classes("text-h6")
-                for f in manifest.session_fields:
-                    hint = f"e.g. {f.example}" if f.example else ("optional" if not f.required else "")
-                    ui.input(f.label, placeholder=hint, validation=lambda v, f=f: f.check(v)) \
-                        .bind_value(state.values, f.key).classes("w-full").props("dense")
-                next_file = ui.label().classes("text-caption text-grey-8 break-all")
+    # -------------------------------------------------------------- top: identifiers, collapsible
+    with ui.expansion("Session identifiers", icon="badge", value=True) \
+            .classes("w-full bg-grey-1 rounded-borders").props("dense header-class=text-h6") as ids:
+        with ui.grid(columns=4).classes("w-full gap-x-4 gap-y-0 q-pa-sm"):
+            for f in manifest.session_fields:
+                hint = f"e.g. {f.example}" if f.example else ("optional" if not f.required else "")
+                ui.input(f.label, placeholder=hint, validation=lambda v, f=f: f.check(v)) \
+                    .bind_value(state.values, f.key).props("dense")
+        with ui.row().classes("w-full items-center justify-between q-px-sm q-pb-sm"):
+            next_file = ui.label().classes("text-caption text-grey-8 break-all")
+            ui.button("Done", icon="expand_less", on_click=lambda: ids.set_value(False)).props("flat dense")
 
-            with ui.card().classes("w-full"):
-                ui.label("Recording").classes("text-h6")
-                with ui.row():
-                    start_btn = ui.button("Start recording", icon="fiber_manual_record", color="negative")
-                    stop_btn = ui.button("Stop", icon="stop", color="grey-8")
-                rec_info = ui.label().classes("text-caption break-all")
-                rec_alert = ui.label().classes("text-body2 text-negative text-weight-medium")
-                blockers = ui.column().classes("gap-0 text-caption text-negative")
-                with ui.row().classes("w-full items-center no-wrap"):
-                    note = ui.input("Note").classes("grow").props("dense")
-                    note_btn = ui.button(icon="send").props("flat dense")
-
-        # ---------------------------------------------------------- right: slots + extras
-        with ui.column().classes("grow gap-4"):
+    with ui.row().classes("w-full items-start no-wrap gap-4 q-mt-md"):
+        # ---------------------------------------------------------- left: streams table, one column per seat
+        with ui.column().classes("grow gap-2"):
             with ui.row().classes("items-center"):
-                ui.label("Slots").classes("text-h6")
+                ui.label("Streams").classes("text-h6")
                 confirm_all = ui.button("Confirm all present", icon="done_all").props("outline dense")
             seats = sorted({s.seat for s in manifest.slots}, key=lambda x: (x == "", x))
-            for seat in seats:
-                with ui.row().classes("w-full gap-3"):
-                    for s in (s for s in manifest.slots if s.seat == seat):
-                        with ui.card().classes("w-72"):
+            kinds = list(dict.fromkeys(stream_kind(s) for s in manifest.slots))
+            by_cell = {(s.seat, stream_kind(s)): s for s in manifest.slots}
+            with ui.grid().classes("w-full gap-2 items-stretch") \
+                    .style(f"grid-template-columns: auto repeat({len(seats)}, minmax(12rem, 1fr))"):
+                ui.label()
+                for seat in seats:
+                    host = next(s.host for s in manifest.slots if s.seat == seat)
+                    with ui.column().classes("gap-0 items-center"):
+                        ui.label(seat or "(no seat)").classes("text-subtitle1 text-weight-bold")
+                        ui.label(host).classes("text-caption text-grey-8")
+                for kind in kinds:
+                    ui.label(kind).classes("text-subtitle2 self-center q-pr-sm")
+                    for seat in seats:
+                        s = by_cell.get((seat, kind))
+                        if s is None:
+                            ui.label()
+                            continue
+                        with ui.column().classes("gap-1 q-pa-sm rounded-borders") as cell:
                             with ui.row().classes("w-full items-center justify-between no-wrap"):
-                                ui.label(s.label).classes("text-subtitle1 text-weight-medium")
                                 badge = ui.badge("MISSING", color="negative")
-                            ui.label(f"{s.stream_name} @ {s.host}" + ("" if s.required else " · optional")) \
-                                .classes("text-caption text-grey-8 break-all")
+                                if not s.required:
+                                    ui.label("optional").classes("text-caption text-grey-7")
                             rate = ui.label().classes("text-body2")
-                            detail = ui.label().classes("text-caption text-grey-8")
-                            with ui.row():
-                                cbtn = ui.button("Confirm", icon="check").props("dense")
-                                ubtn = ui.button("Unconfirm").props("flat dense")
+                            detail = ui.label().classes("text-caption text-grey-8 break-all")
+                            with ui.row().classes("gap-1"):
+                                cbtn = ui.button("Confirm", icon="check").props("dense size=sm")
+                                ubtn = ui.button("Unconfirm").props("flat dense size=sm")
                             cbtn.on_click(lambda sid=s.id: session.monitor.confirm(sid))
                             ubtn.on_click(lambda sid=s.id: session.monitor.unconfirm(sid))
-                            slot_ui[s.id] = dict(badge=badge, rate=rate, detail=detail, cbtn=cbtn, ubtn=ubtn)
+                            cell.tooltip(f"{s.stream_name} @ {s.host}")
+                            slot_ui[s.id] = dict(cell=cell, badge=badge, rate=rate, detail=detail, cbtn=cbtn,
+                                                 ubtn=ubtn, style=None)
             extras = ui.label().classes("text-caption text-grey-8")
+
+        # ---------------------------------------------------------- right: recording
+        with ui.column().classes("w-96 gap-2 q-pa-md rounded-borders") as rec_card:
+            with ui.row().classes("w-full items-center justify-between no-wrap"):
+                ui.label("Recording").classes("text-h6")
+                streams_badge = ui.badge().classes("text-body2 q-px-sm")
+            with ui.row().classes("gap-1"):
+                rec_dots = {s.id: ui.icon("circle", size="xs").tooltip(s.label) for s in manifest.slots}
+            with ui.row():
+                start_btn = ui.button("Start recording", icon="fiber_manual_record", color="negative")
+                stop_btn = ui.button("Stop", icon="stop", color="grey-8")
+            rec_info = ui.label().classes("text-caption break-all")
+            rec_alert = ui.label().classes("text-body2 text-negative text-weight-medium")
+            blockers = ui.column().classes("gap-0 text-caption text-negative")
+            with ui.row().classes("w-full items-center no-wrap"):
+                note = ui.input("Note").classes("grow").props("dense")
+                note_btn = ui.button(icon="send").props("flat dense")
 
     ui.label("Events").classes("text-h6 q-mt-md")
     log = ui.log(max_lines=500).classes("w-full h-64")
@@ -171,6 +209,7 @@ def build_page(state):
     # -------------------------------------------------------------- refresh
     last_seq = [0]
     shown_reasons = [None]
+    shown_worst = [None]
 
     def refresh():
         for n, line in state.logbuf.since(last_seq[0]):
@@ -183,11 +222,27 @@ def build_page(state):
             el["badge"].set_text(st.state.value)
             color = STATE_COLOR[st.state] if (st.slot.required or st.state != SlotState.MISSING) else "grey"
             el["badge"].props(f"color={color}")
-            el["rate"].set_text(f"{st.rate:.0f} samples/s" if st.rate is not None else "no data")
+            if el["style"] != color:
+                el["style"] = color
+                el["cell"].style(replace=tint(color))
+            rec_dots[st.slot.id].props(f"color={color}")
+            if not st.slot.needs_data and not st.rate:
+                el["rate"].set_text("presence only (sends on events)" if st.found else "no data")
+            else:
+                el["rate"].set_text(f"{st.rate:.0f} samples/s" if st.rate is not None else "no data")
             found = f"from {st.found.host}" if st.found and st.found.host != st.slot.host else ""
             el["detail"].set_text(" · ".join(x for x in (st.detail, found) if x))
             el["cbtn"].set_enabled(st.state == SlotState.PRESENT)
+            el["cbtn"].set_visibility(st.state != SlotState.CONFIRMED)
             el["ubtn"].set_visibility(st.state == SlotState.CONFIRMED)
+        required = [st for st in snap if st.slot.required]
+        worst = min((st.state for st in required), key=SEVERITY.index, default=SlotState.CONFIRMED)
+        n_ok = sum(st.state == SlotState.CONFIRMED for st in required)
+        streams_badge.set_text(f"{n_ok}/{len(required)} confirmed")
+        streams_badge.props(f"color={STATE_COLOR[worst]}")
+        if shown_worst[0] != worst:
+            shown_worst[0] = worst
+            rec_card.style(replace=tint(STATE_COLOR[worst]))
         ex = session.monitor.extras()
         extras.set_text("Not in the manifest: " + ", ".join(f"{f.name} @ {f.host}" for f in ex) if ex else "")
 
@@ -198,6 +253,9 @@ def build_page(state):
                                f"Next file: {manifest.build_filename(values, session.next_run(values))}.xdf")
         except (ValueError, KeyError):
             next_file.set_text("Next file: fill in the identifiers")
+        filled = " · ".join(values[f.key] for f in manifest.session_fields if f.key in values and f.key != "notes")
+        if ids.props.get("caption") != filled:
+            ids.props["caption"] = filled  # shown when the panel is collapsed too
         lost = [st.slot.id for st in snap if st.slot.required and st.state not in DATA_STATES]
         rec_alert.set_text(f"No data from {', '.join(lost)}" if cur and lost else "")
 

@@ -17,7 +17,7 @@ import pylsl
 
 from .events import EventLog
 from .monitor import DATA_STATES, Monitor
-from .recorder import LabRecorderCLI, RecorderError
+from .recorder import LabRecorderCLI, RecorderError, source_query, stream_query
 from .session_info import host_label, make_session_info, payload_text, software_version
 from .verify import verify_recording, write_sidecar
 
@@ -31,7 +31,8 @@ class Session:
         self.host = host or host_label()
         self.version = software_version()
         self.events = EventLog(self.out_dir, self.host)
-        self.monitor = Monitor(manifest, on_change=self._on_slot_change, **(monitor_kwargs or {}))
+        self.monitor = Monitor(manifest, on_change=self._on_slot_change,
+                               own_source_ids={self.events.source_id}, **(monitor_kwargs or {}))
         self.recorder = LabRecorderCLI(labrecorder_cli)
         self.current = None  # the recording in progress
         self._lock = threading.Lock()
@@ -88,18 +89,21 @@ class Session:
             xdf = self.out_dir / f"{stem}.xdf"
             outlet, payload = make_session_info(self.manifest, values, run, stem, self.host, self.version)
             info_sid = outlet.get_info().source_id()
+            self.monitor.own_source_ids.add(info_sid)
 
-            own = self._own_streams(info_sid)
-            data = [(st.found.name, st.found.host, st.slot.required)
+            data = [(st.found.name, st.found.host, st.slot.required, st.slot.needs_data)
                     for st in self.monitor.snapshot() if st.state in DATA_STATES]
-            streams = [(n, h) for n, h, _ in data] + own
+            own = [self.events.source_id, info_sid]  # by source_id: other monitors may use the same names
             try:
-                self.recorder.start(xdf, streams)
+                self._wait_visible(own)
+                self.recorder.start(xdf, [stream_query(n, h) for n, h, _, _ in data] + [source_query(s) for s in own])
             except RecorderError as e:
+                self.monitor.own_source_ids.discard(info_sid)
                 self.events.event("recording_failed", file=xdf.name, error=str(e))
                 raise
             outlet.push_sample([payload_text(payload)])
-            self.events.event("recording_start", file=xdf.name, run=run, streams=[n for n, _ in streams])
+            self.events.event("recording_start", file=xdf.name, run=run,
+                              streams=[n for n, _, _, _ in data] + [self.events.stream_name, outlet.get_info().name()])
             self.current = dict(xdf=xdf, run=run, payload=payload, outlet=outlet, info_sid=info_sid,
                                 expected=data, values=dict(values), started=time.time(), slot_events=[])
             return xdf
@@ -128,18 +132,15 @@ class Session:
                 "labrecorder_exit_code": code, "streams": summary, "slot_events": cur["slot_events"],
                 "problems": problems})
             self.events.event("recording_checked", file=cur["xdf"].name, ok=not problems, problems=problems)
+            self.monitor.own_source_ids.discard(cur["info_sid"])
             del cur["outlet"]
             return problems
 
-    def _own_streams(self, info_sid, timeout=5.0):
-        """Our marker and session-info streams as LSL reports them (they must be resolvable first)."""
-        own = []
-        for sid in (self.events.source_id, info_sid):
-            found = pylsl.resolve_byprop("source_id", sid, minimum=1, timeout=timeout)
-            if not found:
+    def _wait_visible(self, source_ids, timeout=5.0):
+        """LabRecorderCLI resolves streams once at start: ours must be visible on LSL first."""
+        for sid in source_ids:
+            if not pylsl.resolve_byprop("source_id", sid, minimum=1, timeout=timeout):
                 raise RecorderError(f"own stream {sid} is not visible on LSL")
-            own.append((found[0].name(), found[0].hostname()))
-        return own
 
     def _on_slot_change(self, old, new):
         fields = dict(slot=new.slot.id, state=new.state.value, previous=old.state.value)

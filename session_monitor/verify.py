@@ -10,7 +10,7 @@ def _first(d, key, default=""):
 
 
 def verify_recording(xdf_path, expected, info_source_id, markers_source_id, session_values):
-    """expected: [(name, hostname, required)]. Returns (problems, summary)."""
+    """expected: [(name, hostname, required, needs_data)]. Returns (problems, summary)."""
     streams, _ = pyxdf.load_xdf(str(xdf_path), dejitter_timestamps=False)
     problems, summary = [], []
     by_key = {}
@@ -21,12 +21,12 @@ def verify_recording(xdf_path, expected, info_source_id, markers_source_id, sess
         summary.append({"name": key[0], "host": key[1], "type": _first(i, "type"),
                         "source_id": _first(i, "source_id"), "samples": len(s["time_stamps"])})
 
-    for name, host, required in expected:
+    for name, host, required, needs_data in expected:
         found = by_key.get((name, host), [])
         if not found:
             if required:
                 problems.append(f"missing required stream {name}@{host}")
-        elif not len(found[0]["time_stamps"]):
+        elif needs_data and not len(found[0]["time_stamps"]):
             problems.append(f"{name}@{host} recorded no samples")
 
     by_source = {_first(s["info"], "source_id"): s for s in streams}

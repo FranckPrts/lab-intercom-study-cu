@@ -15,8 +15,7 @@ What it answers:
 
 - Do three NIC2 instances stream side by side without dropping data?
 - How long does NIC2's synchronizer take before a recording can start?
-- What are the NIC2 computers' real LSL host names, and what do NIC2's
-  `Quality` and `Accelerometer` streams look like (channels, rate)?
+- What do NIC2's `Quality` and `Accelerometer` streams look like (channels, rate)?
 - Are NIC2's timestamps on the LSL clock (needed to align with other devices)?
 - Does the session monitor confirm, record and check the real streams?
 - How far apart in time do the three devices see the same physical event, and
@@ -30,9 +29,11 @@ What it answers:
    through the firewall, turn Wi-Fi off.
 2. **NIC2 settings** (each computer):
    - When choosing the device, enable the **synchronizer** in the Settings pane.
-   - In **Protocol Settings**, turn on LSL and set the outlet name to the
-     participant: `P1` on computer 1, `P2` on 2, `P3` on 3. NIC2 then publishes
-     `P1-EEG`, `P1-Accelerometer`, `P1-Quality` and `P1-Markers`.
+   - In **Protocol Settings**, turn on LSL. NIC2 on computer N publishes
+     `ENOBIO<N>-EEG`, `-Quality`, `-Accelerometer` and `-Markers` (the number
+     comes from the NIC2 install, so ENOBIO1 is always computer 1, seat P1).
+     The session monitor records `EEG` and `Quality`, plus `Accelerometer`
+     when present; NIC2's `Markers` stream is not used.
    - Turn the accelerometer on if NIC2 has an option for it (the tap test needs it).
    - Keep NIC2's own file saving on: it is a per-computer backup of each recording.
 3. **Network**: NIC2 computers and the Mac on the same wired network, with fixed
@@ -43,6 +44,8 @@ What it answers:
    - Open this folder in VS Code: **Terminal > Run Task... > Env: create**, then
      **Env: check**. After `environment.yml` changes: **Env: update**.
    - Install LabRecorder, which brings `LabRecorderCLI`: `brew install labrecorder`.
+   - Copy `manifests/bench_EXAMPLE.yaml` to `manifests/bench.yaml` (git-ignored)
+     and set each slot's `host` to the NIC2 computer's LSL host name.
    - **Local Network permission**: System Settings > Privacy & Security >
      Local Network, allow VS Code (or Terminal) and Python. Without it macOS
      silently blocks LSL.
@@ -65,14 +68,13 @@ What it answers:
    NIC2 computer: connect its Enobio by USB, start NIC2, connect the device,
    load the protocol and start streaming. Note how long the synchronizer takes
    until NIC2 allows recording.
-2. On the Mac: task **Bench: check streams**. Expect the `EEG`, `Quality`,
-   `Accelerometer` and `Markers` streams of each participant, each participant
-   from a different host, and delays of tens of milliseconds. It prints a list
-   "Put these host names in manifests/bench.yaml": copy those host names into
-   the `slots` section of [`manifests/bench.yaml`](../manifests/bench.yaml)
-   (replacing `TABLET-1` to `TABLET-3`), then run task **Manifest: check**.
-   Copy the output into the results below, including the channels and rates
-   of the `Quality` and `Accelerometer` streams.
+2. On the Mac: task **Bench: check streams**. Expect the `ENOBIO1` to
+   `ENOBIO3` streams, each number from its own computer, every slot "OK" against
+   [`manifests/bench.yaml`](../manifests/bench.yaml), and delays of tens of
+   milliseconds. If it prints "Put these host names in manifests/bench.yaml",
+   a computer's name changed: copy the new name into the manifest and run task
+   **Manifest: check**. Copy the output into the results below, including the
+   channels and rates of the `Quality` and `Accelerometer` streams.
 3. Task **Session: GUI** with manifest `manifests/bench.yaml`. Identifiers for
    the bench run: group `G00`, session `01`, task `bench`, condition `taps`,
    participants `S901`, `S902`, `S903`, your initials as operator.
@@ -108,7 +110,7 @@ confirm millisecond-level alignment; that needs a shared electrical test signal.
 ```
 Date / NIC2 computers / recording Mac / switch:
 NIC2 version:
-NIC2 computers' LSL host names (P1 / P2 / P3):
+NIC2 computers' LSL host names, if changed (P1 / P2 / P3):
 
 Synchronizer time       P1        P2        P3
   ready to record     (mm:ss)   (mm:ss)   (mm:ss)

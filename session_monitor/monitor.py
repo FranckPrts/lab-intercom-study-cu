@@ -7,6 +7,7 @@ Slot states:
     MISSING    no stream with this name on the network
     MISMATCH   the name is there, but from another host, or twice on this host
     SILENT     the stream is there but no data has arrived recently
+               (never for `needs_data: false` slots, e.g. markers sent only on events)
     PRESENT    data is arriving
     CONFIRMED  PRESENT, and an operator confirmed it (drops back if data stops)
 """
@@ -19,8 +20,6 @@ from enum import Enum
 
 import pylsl
 from pylsl.util import LostError
-
-from .events import OWN_SOURCE_PREFIX
 
 log = logging.getLogger("session_monitor")
 
@@ -91,8 +90,10 @@ class _Live:
 
 class Monitor:
     def __init__(self, manifest, on_change=None, tick=0.25, resolve_every=1.0, rate_window=5.0,
-                 stale_s=3.0, stale_irregular_s=10.0, forget_after=5.0):
+                 stale_s=3.0, stale_irregular_s=10.0, forget_after=5.0, own_source_ids=None):
         self.manifest = manifest
+        # source_ids of this program's own streams, left out of extras (a set the owner may update)
+        self.own_source_ids = own_source_ids if own_source_ids is not None else set()
         self.on_change = on_change  # called as on_change(old: SlotStatus, new: SlotStatus) from the monitor thread
         self.tick, self.resolve_every, self.rate_window = tick, resolve_every, rate_window
         self.stale_s, self.stale_irregular_s, self.forget_after = stale_s, stale_irregular_s, forget_after
@@ -118,7 +119,7 @@ class Monitor:
             return tuple(self._status[s.id] for s in self.manifest.slots)
 
     def extras(self):
-        """Streams on the network that belong to no slot (and are not ours)."""
+        """Streams on the network that belong to no slot and are not ours (another monitor's are listed)."""
         with self._lock:
             return self._extras
 
@@ -184,7 +185,7 @@ class Monitor:
             else:
                 live.match_state, live.match_detail = SlotState.MISSING, "not on the network"
         extras = tuple(sorted((f for f in found if f.uid not in claimed
-                               and not f.source_id.startswith(OWN_SOURCE_PREFIX)),
+                               and f.source_id not in self.own_source_ids),
                               key=lambda f: (f.name, f.host)))
         with self._lock:
             self._extras = extras
@@ -253,7 +254,7 @@ class Monitor:
         rate = sum(n for _, n in live.counts) / span if span > 0.5 else None
         age = None if live.last_data is None else now - live.last_data
         stale = self.stale_irregular_s if f.nominal_rate <= 0 else max(self.stale_s, 3 / f.nominal_rate)
-        if age is None or age > stale:
+        if slot.needs_data and (age is None or age > stale):
             live.confirmed = False
             detail = "no data yet" if age is None else f"no data for over {stale:.0f} s"
             return SlotStatus(slot, SlotState.SILENT, detail, f, rate, age)

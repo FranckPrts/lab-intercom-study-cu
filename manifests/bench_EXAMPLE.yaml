@@ -1,0 +1,70 @@
+# EXAMPLE manifest (tracked in git). Copy it to manifests/bench.yaml (git-ignored)
+# and replace NIC2-PC-1..3 with the NIC2 computers' real LSL host names
+# (`bench/check_streams.py` prints them).
+# Bench test manifest: what the recording Mac expects on the LSL network.
+# Check it with the VS Code task "Manifest: check", or:
+#   python -m session_monitor.manifest manifests/bench.yaml
+
+# Identifiers typed in before recording. Proposed fields, pending the paradigm
+# team's answer ("Recording identifiers" doc). `pattern` is a regular
+# expression the value must match; `example` is shown as a hint.
+session_fields:
+  - key: group
+    label: Group
+    pattern: 'G\d{2}'
+    example: G01
+  - key: session
+    label: Session
+    pattern: '\d{2}'
+    example: '01'
+  - key: task
+    label: Task
+    pattern: '[a-z][a-z0-9]*'
+    example: baseline
+  - key: condition
+    label: Condition
+    pattern: '[a-z][a-z0-9]*'
+    example: eyesopen
+  - key: p1
+    label: Participant on seat P1
+    pattern: 'S\d{3}'
+    example: S014
+  - key: p2
+    label: Participant on seat P2
+    pattern: 'S\d{3}'
+    example: S027
+  - key: p3
+    label: Participant on seat P3
+    pattern: 'S\d{3}'
+    example: S031
+  - key: operator
+    label: Operator
+    pattern: '[A-Z]{2,3}'
+    example: FP
+  - key: notes
+    label: Notes
+    required: false
+
+# XDF file name (without .xdf). {run} is counted by the recorder (01, 02, ...).
+filename: 'grp-{group}_ses-{session}_task-{task}_cond-{condition}_run-{run}'
+
+# Expected LSL streams. A slot matches a stream by its exact name AND the
+# computer name it comes from (as `bench/check_streams.py` prints in "host").
+# NIC2 on computer N publishes ENOBIO<N>-EEG, -Quality, -Accelerometer and
+# -Markers; the number is set by the NIC2 install on that computer, so
+# ENOBIO1 is always computer 1 (seat P1).
+# ENOBIO<N>-Markers is not tracked or recorded: no markers come from NIC2.
+#   required: false   recorded when present, never blocks Start
+slots:
+  # Seat P1 - NIC2 computer 1 (NIC2-PC-1)
+  - {id: ENOBIO1-EEG,           seat: P1, label: P1 EEG,            stream_name: ENOBIO1-EEG,           host: NIC2-PC-1}
+  - {id: ENOBIO1-Quality,       seat: P1, label: P1 signal quality, stream_name: ENOBIO1-Quality,       host: NIC2-PC-1}
+  - {id: ENOBIO1-Accelerometer, seat: P1, label: P1 accelerometer,  stream_name: ENOBIO1-Accelerometer, host: NIC2-PC-1, required: false}
+  # Seat P2 - NIC2 computer 2 (NIC2-PC-2)
+  - {id: ENOBIO2-EEG,           seat: P2, label: P2 EEG,            stream_name: ENOBIO2-EEG,           host: NIC2-PC-2}
+  - {id: ENOBIO2-Quality,       seat: P2, label: P2 signal quality, stream_name: ENOBIO2-Quality,       host: NIC2-PC-2}
+  - {id: ENOBIO2-Accelerometer, seat: P2, label: P2 accelerometer,  stream_name: ENOBIO2-Accelerometer, host: NIC2-PC-2, required: false}
+  # Seat P3 - NIC2 computer 3 (NIC2-PC-3)
+  - {id: ENOBIO3-EEG,           seat: P3, label: P3 EEG,            stream_name: ENOBIO3-EEG,           host: NIC2-PC-3}
+  - {id: ENOBIO3-Quality,       seat: P3, label: P3 signal quality, stream_name: ENOBIO3-Quality,       host: NIC2-PC-3}
+  - {id: ENOBIO3-Accelerometer, seat: P3, label: P3 accelerometer,  stream_name: ENOBIO3-Accelerometer, host: NIC2-PC-3, required: false}

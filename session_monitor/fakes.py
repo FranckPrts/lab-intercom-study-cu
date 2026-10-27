@@ -30,11 +30,13 @@ from .manifest import ManifestError, load_manifest
 
 log = logging.getLogger("session_monitor.fakes")
 
-# (channels, nominal rate in Hz, LSL type), chosen from the stream name's suffix
+# (channels, nominal rate in Hz, LSL type), chosen from the stream name's suffix.
+# Markers: irregular text stream (rate 0) that stays silent, like NIC2's between events.
 KINDS = {
     "-EEG": (32, 500.0, "EEG"),
     "-Quality": (32, 1.0, "Quality"),
     "-Accelerometer": (3, 100.0, "Accelerometer"),  # rate is a guess; check NIC2's
+    "-Markers": (1, 0.0, "Markers"),
 }
 DEFAULT_KIND = (1, 100.0, "Misc")
 
@@ -60,7 +62,8 @@ class Fake:
     killed: bool = False
 
     def open(self):
-        info = pylsl.StreamInfo(self.name, self.type, self.channels, self.rate, pylsl.cf_float32, self.source_id)
+        fmt = pylsl.cf_string if self.type == "Markers" else pylsl.cf_float32
+        info = pylsl.StreamInfo(self.name, self.type, self.channels, self.rate, fmt, self.source_id)
         info.desc().append_child_value("manufacturer", "session_monitor.fakes")
         self.outlet = pylsl.StreamOutlet(info)
 
@@ -71,6 +74,8 @@ class Fake:
         if self.kill_at is not None and elapsed >= self.kill_at:
             self.outlet, self.killed = None, True
             return f"{self.name} ({self.source_id}) killed"
+        if self.rate <= 0:
+            return None  # event stream: nothing to send
         due = int(elapsed * self.rate)
         if self.silent and self.silent[0] <= elapsed < self.silent[1]:
             self.sent = due  # skip the samples of the silent window
@@ -173,7 +178,7 @@ def main(argv=None):
         log.info("wrote %s (hosts = %s)", args.local_manifest, host)
 
     log.info("publishing %d fake stream(s) from %s: %s", len(fakes), host,
-             ", ".join(f"{f.name} {f.channels}ch {f.rate:g}Hz" for f in fakes))
+             ", ".join(f"{f.name} {f.channels}ch {f.rate:g}Hz" if f.rate > 0 else f"{f.name} (events)" for f in fakes))
     for slot, (a, b) in silent.items():
         log.info("  %s silent from %g s to %g s", slot, a, b)
     for slot, at in kill.items():

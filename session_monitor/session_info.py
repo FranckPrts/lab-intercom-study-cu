@@ -55,7 +55,7 @@ def make_session_info(manifest, values, run, file_stem, host, version):
         "software_version": version,
         "created": datetime.now().astimezone().isoformat(timespec="seconds"),
         "slots": [{"id": s.id, "seat": s.seat, "label": s.label, "stream_name": s.stream_name,
-                   "host": s.host, "required": s.required} for s in manifest.slots],
+                   "host": s.host, "required": s.required, "needs_data": s.needs_data} for s in manifest.slots],
     }
     info = pylsl.StreamInfo(f"SessionMonitor-{host}-SessionInfo", "SessionInfo", 1, 0, pylsl.cf_string,
                             f"{OWN_SOURCE_PREFIX}{host}-info-{file_stem}")

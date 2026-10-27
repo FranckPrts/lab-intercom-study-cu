@@ -8,3 +8,7 @@ bench/devices.json
 
 # Recordings, logs and generated manifests (session_monitor output)
 data/
+
+# Session manifests: only the *_EXAMPLE.yaml templates are tracked
+manifests/*
+!manifests/*_EXAMPLE.yaml
