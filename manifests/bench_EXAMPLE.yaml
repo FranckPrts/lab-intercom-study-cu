@@ -70,22 +70,21 @@ filename: 'grp-{group}_ses-{session}_task-{task}_cond-{condition}_run-{run}'
 #   required: false   recorded when present, never blocks Start
 #
 # Respiration belts (Vernier GDX-RB), streamed by respiration/vernier_connect.py
-# on the participant computer. vernier-lsl names the stream after the belt:
-# "GDX-RB <serial>" -> GDX-RB_<serial>. Each belt is pinned to one seat:
-# Belt A on computer 1 (P1), Belt B on computer 2 (P2), Belt C on computer 3 (P3),
-# as in the MANIFEST list of vernier_connect.py (run it with --belt 1/2/3).
-# Replace the serials with your belts' (printed on the belt, or `vernier-lsl --scan`).
-# required: false until all three serials are real and the bench test has run.
+# on the participant computer. vernier-lsl names the stream after the belt
+# (GDX-RB_<serial>), so the name says which belt, not which seat: the slot takes
+# any GDX-RB belt (GDX-RB_*) from that seat's computer. The serial still ends up
+# in the XDF stream name. Two belts on one computer show as MISMATCH.
+# required: false until the bench test with the belts has run.
 slots:
   # Seat P1 - NIC2 computer 1 (NIC2-PC-1)
   - {id: ENOBIO1-EEG,           seat: P1, label: P1 EEG,            stream_name: ENOBIO1-EEG,           host: NIC2-PC-1}
   - {id: ENOBIO1-Quality,       seat: P1, label: P1 signal quality, stream_name: ENOBIO1-Quality,       host: NIC2-PC-1}
-  - {id: P1-Respiration,        seat: P1, label: P1 respiration,    stream_name: GDX-RB_0K7017C4,       host: NIC2-PC-1, required: false}
+  - {id: P1-Respiration,        seat: P1, label: P1 respiration,    stream_name: GDX-RB_*,              host: NIC2-PC-1, required: false}
   # Seat P2 - NIC2 computer 2 (NIC2-PC-2)
   - {id: ENOBIO2-EEG,           seat: P2, label: P2 EEG,            stream_name: ENOBIO2-EEG,           host: NIC2-PC-2}
   - {id: ENOBIO2-Quality,       seat: P2, label: P2 signal quality, stream_name: ENOBIO2-Quality,       host: NIC2-PC-2}
-  - {id: P2-Respiration,        seat: P2, label: P2 respiration,    stream_name: GDX-RB_0K0000000,      host: NIC2-PC-2, required: false}
+  - {id: P2-Respiration,        seat: P2, label: P2 respiration,    stream_name: GDX-RB_*,              host: NIC2-PC-2, required: false}
   # Seat P3 - NIC2 computer 3 (NIC2-PC-3)
   - {id: ENOBIO3-EEG,           seat: P3, label: P3 EEG,            stream_name: ENOBIO3-EEG,           host: NIC2-PC-3}
   - {id: ENOBIO3-Quality,       seat: P3, label: P3 signal quality, stream_name: ENOBIO3-Quality,       host: NIC2-PC-3}
-  - {id: P3-Respiration,        seat: P3, label: P3 respiration,    stream_name: GDX-RB_0K0000001,      host: NIC2-PC-3, required: false}
+  - {id: P3-Respiration,        seat: P3, label: P3 respiration,    stream_name: GDX-RB_*,              host: NIC2-PC-3, required: false}

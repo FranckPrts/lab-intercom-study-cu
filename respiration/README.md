@@ -30,16 +30,17 @@ Everything it does is written to the console and appended to
 
 ## Belts and seats
 
-Each belt is pinned to one seat, so the session monitor can tell the three
-belts apart.
+Belts are interchangeable: the computer decides the seat, not the belt. Any
+belt streaming from computer N counts as seat PN's respiration, so a belt with
+a flat battery can be swapped for a spare without touching the manifests.
+(Unlike NIC2, which names its streams after the computer, `vernier-lsl` names
+them after the belt, `GDX-RB_<serial>`; the session manifests accept any
+`GDX-RB_*` name.) The serial stays in the recorded stream name, so the XDF
+still says which belt each participant wore.
 
-The belt list is `MANIFEST` at the top of `vernier_connect.py`, and menu
-number N is belt N. Always pick the belt that matches the computer's number
-(Belt A on computer 1, and so on). Running with `--belt 1`, `--belt 2` or
-`--belt 3` skips the menu and avoids picking the wrong one.
-
-When the real serials of belts B and C are known, update them in **both**
-`vernier_connect.py` (`MANIFEST`) and the session manifests (see below).
+The belt list is `MANIFEST` at the top of `vernier_connect.py`. Pick any belt
+that no other computer is using; `--belt N` skips the menu. Add a new belt's
+serial there (no manifest change needed).
 
 ## Setup on each participant computer (Windows, once)
 
@@ -79,7 +80,8 @@ manifest.
 The belts are slots in the session manifests (`manifests/bench.yaml`, and the
 tracked template [`manifests/bench_EXAMPLE.yaml`](../manifests/bench_EXAMPLE.yaml)):
 one slot per seat, `P1-Respiration` … `P3-Respiration`. Each slot is matched
-by the belt's stream name **and** its computer's host name. The GUI shows them
+by its computer's host name and any stream named `GDX-RB_*`, whichever belt
+that is (the GUI cell shows the belt's stream name, i.e. its serial). The GUI shows them
 as a **respiration** row under P1, P2 and P3, with the same states as the EEG
 (MISSING / MISMATCH / SILENT / PRESENT / CONFIRMED), and LabRecorderCLI
 records them into the same XDF file.
@@ -87,14 +89,15 @@ records them into the same XDF file.
 Common states:
 - **MISSING**: `vernier_connect.py` isn't running on that computer, or the
   belt isn't streaming yet.
-- **MISMATCH, found on another host**: the belt was started on the wrong
-  computer (e.g. Belt B on computer 1).
+- **MISMATCH, found on another host**: a belt is streaming from a computer
+  that isn't a seat (e.g. the Mac, when testing).
+- **MISMATCH, 2 streams on …**: two belts are connected to the same computer.
 - **SILENT**: the stream exists but no data arrived for 10 s (belt off, out of
   range). The script restarts it on its own.
 
 For now the respiration slots are `required: false`: they are tracked and
 recorded when present, but never block Start. Make them required once the
-three serials are real and the bench test has passed.
+bench test with the belts has passed.
 
 To rehearse without belts, the VS Code task **Fakes: publish bench streams**
 publishes fake respiration streams too. They're 1 channel at 100 Hz, which
@@ -104,9 +107,9 @@ isn't the real belt's format.
 
 - ⚠️ **Stream name.** `vernier-lsl` names the stream after the belt's device
   name with spaces replaced by `_`. For a GDX-RB this is expected to be
-  `GDX-RB_<serial>`, but a belt renamed in Graphical Analysis would publish a
-  different name. Confirm with `--list-streams` or `bench/check_streams.py`
-  and fix the manifests if it differs.
+  `GDX-RB_<serial>` (confirmed: `GDX-RB_0K7017F1`, `GDX-RB_0K7017C4`), but a
+  belt renamed in Graphical Analysis would publish a different name and not
+  match `GDX-RB_*`. Check with `--list-streams` or `bench/check_streams.py`.
 
 - ⚠️ **Channels.** `vernier-lsl` streams the belt's default sensors. Check
   which channels (force, respiration rate, …) and units end up in the XDF.

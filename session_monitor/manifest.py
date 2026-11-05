@@ -5,6 +5,8 @@ A manifest is a YAML file with three parts:
     session_fields   identifiers typed in before recording (group, session, task, ...)
     filename         template for XDF file names, built from those fields + {run}
     slots            the LSL streams expected, each matched by stream name + host;
+                     the name may use wildcards (* any text, ? one character) when the
+                     device, not the computer, sets it: `GDX-RB_*` = any respiration belt;
                      `needs_data: false` for event streams (markers) that may stay silent:
                      present as soon as the stream is on the network
 
@@ -14,6 +16,7 @@ Check a manifest from the terminal:
 """
 import re
 import string
+from fnmatch import fnmatchcase
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -67,9 +70,17 @@ class Slot:
     required: bool = True
     needs_data: bool = True  # False: present once listed, even with no samples
 
+    @property
+    def is_pattern(self):
+        return any(c in self.stream_name for c in "*?[")
+
+    def matches_name(self, stream_name):
+        """Exact name, or wildcards (* ? [..]) as in `GDX-RB_*`; case-sensitive."""
+        return fnmatchcase(stream_name, self.stream_name)
+
     def matches(self, stream_name, host):
-        """Exact stream name; host ignoring case (Windows computer names are case-insensitive)."""
-        return stream_name == self.stream_name and host.casefold() == self.host.casefold()
+        """Stream name (see matches_name); host ignoring case (Windows computer names are case-insensitive)."""
+        return self.matches_name(stream_name) and host.casefold() == self.host.casefold()
 
 
 @dataclass(frozen=True)
@@ -194,6 +205,11 @@ def _parse_slots(raw, problems):
         ids.add(sid)
         pairs.add((slot.stream_name, slot.host))
         slots.append(slot)
+    for p in (s for s in slots if s.is_pattern):
+        for s in slots:
+            if s is not p and not s.is_pattern and s.host.casefold() == p.host.casefold() and p.matches_name(s.stream_name):
+                problems.append(f"slots ({p.id}): '{p.stream_name}' on {p.host} would also match slot {s.id}'s "
+                                f"stream '{s.stream_name}'; make the pattern narrower")
     if slots and not any(s.required for s in slots):
         problems.append("slots: at least one slot must be required")
     return slots

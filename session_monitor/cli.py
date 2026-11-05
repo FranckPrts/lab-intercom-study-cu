@@ -53,7 +53,7 @@ def slot_table(session):
     for st in session.monitor.snapshot():
         s = st.slot
         rate = f"{st.rate:.0f}/s" if st.rate is not None else "-"
-        where = f"{s.stream_name} @ {st.found.host if st.found else s.host}"
+        where = f"{st.found.name} @ {st.found.host}" if st.found else f"{s.stream_name} @ {s.host}"
         req = ("" if s.required else " (optional)") + ("" if s.needs_data else " (presence only)")
         lines.append(f"  {STATE_MARK[st.state]:2} {s.id:<22} {st.state.value:<9} {rate:>7}  {where:<36} {st.detail}{req}")
     extras = session.monitor.extras()

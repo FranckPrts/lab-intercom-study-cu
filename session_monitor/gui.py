@@ -254,7 +254,9 @@ def build_page(state):
             else:
                 el["rate"].set_text(f"{st.rate:.0f} samples/s" if st.rate is not None else "no data")
             found = f"from {st.found.host}" if st.found and st.found.host != st.slot.host else ""
-            el["detail"].set_text(" · ".join(x for x in (st.detail, found) if x))
+            # wildcard slot (GDX-RB_*): show which device it is, e.g. the belt's serial
+            device = st.found.name if st.found and st.slot.is_pattern else ""
+            el["detail"].set_text(" · ".join(x for x in (device, st.detail, found) if x))
             el["cbtn"].set_enabled(st.state == SlotState.PRESENT)
             el["cbtn"].set_visibility(st.state != SlotState.CONFIRMED)
             el["ubtn"].set_visibility(st.state == SlotState.CONFIRMED)

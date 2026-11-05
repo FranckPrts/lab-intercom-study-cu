@@ -6,6 +6,8 @@ for each matched stream opens an inlet only to count the samples arriving.
 Slot states:
     MISSING    no stream with this name on the network
     MISMATCH   the name is there, but from another host, or twice on this host
+               (a wildcard slot, e.g. `GDX-RB_*`, ignores streams that another
+               slot claims on their own host: P2's belt is not a P1 mismatch)
     SILENT     the stream is there but no data has arrived recently
                (never for `needs_data: false` slots, e.g. markers sent only on events)
     PRESENT    data is arriving
@@ -158,10 +160,13 @@ class Monitor:
     def _match(self, found, infos):
         info_by_uid = {f.uid: i for f, i in zip(found, infos)}
         claimed = set()
+        # which slots each stream matches on its own host
+        owners = {f.uid: {s.id for s in self.manifest.slots if s.matches(f.name, f.host)} for f in found}
         for live in self._live.values():
             slot = live.slot
-            named = [f for f in found if f.name == slot.stream_name]
-            here = [f for f in named if slot.matches(f.name, f.host)]
+            here = [f for f in found if slot.matches(f.name, f.host)]
+            named = here + [f for f in found if slot.matches_name(f.name) and f not in here
+                            and not (slot.is_pattern and owners[f.uid])]
             claimed.update(f.uid for f in named)
             if len(here) == 1 and here[0].uid == live.dead_uid:
                 continue  # keep "stream lost" until it disappears or comes back with a new uid
@@ -177,7 +182,8 @@ class Monitor:
             live.unbind()
             if len(here) > 1:
                 live.match_state = SlotState.MISMATCH
-                live.match_detail = f"{len(here)} streams named {slot.stream_name} on {slot.host}"
+                names = ", ".join(sorted(f.name for f in here))
+                live.match_detail = f"{len(here)} streams on {slot.host} ({names}), expected one"
             elif named:
                 hosts = ", ".join(sorted({f.host for f in named}))
                 live.match_state = SlotState.MISMATCH

@@ -41,15 +41,18 @@ def compare_with_manifest(manifest, infos):
     """Print, per slot, whether its stream is on the expected host; suggest host values."""
     print(f"\nCompared with {manifest.path}:")
     suggestions, seat_hosts = {}, {}
+    owned = {i.uid() for i in infos if any(s.matches(i.name(), i.hostname()) for s in manifest.slots)}
     for slot in manifest.slots:
-        found = [i for i in infos if i.name() == slot.stream_name]
-        here = [i for i in found if i.hostname().casefold() == slot.host.casefold()]
+        here = [i for i in infos if slot.matches(i.name(), i.hostname())]
+        # a wildcard slot (GDX-RB_*) leaves alone the streams another slot claims on their own host
+        found = here + [i for i in infos if slot.matches_name(i.name()) and i not in here
+                        and not (slot.is_pattern and i.uid() in owned)]
         req = "" if slot.required else " (optional)"
         if len(here) == 1:
-            verdict = f"OK on {slot.host}"
+            verdict = f"OK on {slot.host}" + (f" ({here[0].name()})" if slot.is_pattern else "")
             seat_hosts.setdefault(slot.seat, set()).add(here[0].hostname())
         elif len(here) > 1:
-            verdict = f"{len(here)} streams with this name on {slot.host}"
+            verdict = f"{len(here)} matching streams on {slot.host}: {', '.join(sorted(i.name() for i in here))}"
         elif found:
             hosts = sorted({i.hostname() for i in found})
             verdict = f"found on {', '.join(hosts)}, manifest says {slot.host}"
