@@ -26,17 +26,29 @@ session_fields:
     pattern: '[a-z][a-z0-9]*'
     example: eyesopen
   - key: p1
-    label: Participant on seat P1
+    label: Subject P1
     pattern: 'S\d{3}'
     example: S014
+  - key: p1_age
+    label: Age P1
+    pattern: '\d{2}'
+    example: '24'
   - key: p2
-    label: Participant on seat P2
+    label: Subject P2
     pattern: 'S\d{3}'
     example: S027
+  - key: p2_age
+    label: Age P2
+    pattern: '\d{2}'
+    example: '24'
   - key: p3
-    label: Participant on seat P3
+    label: Subject P3
     pattern: 'S\d{3}'
     example: S031
+  - key: p3_age
+    label: Age P3
+    pattern: '\d{2}'
+    example: '24'
   - key: operator
     label: Operator
     pattern: '[A-Z]{2,3}'
@@ -54,17 +66,15 @@ filename: 'grp-{group}_ses-{session}_task-{task}_cond-{condition}_run-{run}'
 # -Markers; the number is set by the NIC2 install on that computer, so
 # ENOBIO1 is always computer 1 (seat P1).
 # ENOBIO<N>-Markers is not tracked or recorded: no markers come from NIC2.
+# ENOBIO<N>-Accelerometer is not tracked or recorded: not needed for the study.
 #   required: false   recorded when present, never blocks Start
 slots:
   # Seat P1 - NIC2 computer 1 (NIC2-PC-1)
   - {id: ENOBIO1-EEG,           seat: P1, label: P1 EEG,            stream_name: ENOBIO1-EEG,           host: NIC2-PC-1}
   - {id: ENOBIO1-Quality,       seat: P1, label: P1 signal quality, stream_name: ENOBIO1-Quality,       host: NIC2-PC-1}
-  - {id: ENOBIO1-Accelerometer, seat: P1, label: P1 accelerometer,  stream_name: ENOBIO1-Accelerometer, host: NIC2-PC-1, required: false}
   # Seat P2 - NIC2 computer 2 (NIC2-PC-2)
   - {id: ENOBIO2-EEG,           seat: P2, label: P2 EEG,            stream_name: ENOBIO2-EEG,           host: NIC2-PC-2}
   - {id: ENOBIO2-Quality,       seat: P2, label: P2 signal quality, stream_name: ENOBIO2-Quality,       host: NIC2-PC-2}
-  - {id: ENOBIO2-Accelerometer, seat: P2, label: P2 accelerometer,  stream_name: ENOBIO2-Accelerometer, host: NIC2-PC-2, required: false}
   # Seat P3 - NIC2 computer 3 (NIC2-PC-3)
   - {id: ENOBIO3-EEG,           seat: P3, label: P3 EEG,            stream_name: ENOBIO3-EEG,           host: NIC2-PC-3}
   - {id: ENOBIO3-Quality,       seat: P3, label: P3 signal quality, stream_name: ENOBIO3-Quality,       host: NIC2-PC-3}
-  - {id: ENOBIO3-Accelerometer, seat: P3, label: P3 accelerometer,  stream_name: ENOBIO3-Accelerometer, host: NIC2-PC-3, required: false}

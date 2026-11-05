@@ -32,8 +32,8 @@ What it answers:
    - In **Protocol Settings**, turn on LSL. NIC2 on computer N publishes
      `ENOBIO<N>-EEG`, `-Quality`, `-Accelerometer` and `-Markers` (the number
      comes from the NIC2 install, so ENOBIO1 is always computer 1, seat P1).
-     The session monitor records `EEG` and `Quality`, plus `Accelerometer`
-     when present; NIC2's `Markers` stream is not used.
+     The session monitor records `EEG` and `Quality`; NIC2's `Accelerometer`
+     and `Markers` streams are not recorded.
    - Turn the accelerometer on if NIC2 has an option for it (the tap test needs it).
    - Keep NIC2's own file saving on: it is a per-computer backup of each recording.
 3. **Network**: NIC2 computers and the Mac on the same wired network, with fixed
@@ -79,8 +79,7 @@ What it answers:
    the bench run: group `G00`, session `01`, task `bench`, condition `taps`,
    participants `S901`, `S902`, `S903`, your initials as operator.
 4. Every required slot card should show PRESENT with a plausible rate (EEG
-   about 500 samples/s). Confirm each one (or **Confirm all present**). The
-   accelerometer cards are optional: they are recorded when present.
+   about 500 samples/s). Confirm each one (or **Confirm all present**).
 5. Put the three Enobio amplifiers **touching each other on a hard table**,
    then **Start recording**.
 6. Add the note `taps start`, then make 5 sharp knuckle taps on the table next

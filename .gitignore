@@ -3,12 +3,15 @@
 
 # Python
 __pycache__/
-bench/devices.json
+
+# Assist
 .private_notes/
+.claude
 
 # Recordings, logs and generated manifests (session_monitor output)
 data/
 
 # Session manifests: only the *_EXAMPLE.yaml templates are tracked
+bench/devices.json
 manifests/*
 !manifests/*_EXAMPLE.yaml

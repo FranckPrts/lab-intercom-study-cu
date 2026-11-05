@@ -10,6 +10,7 @@ session. Events are also printed in this terminal and written to the CSV log in
 import argparse
 import itertools
 import logging
+import re
 import sys
 import threading
 import time
@@ -87,11 +88,33 @@ def build_page(state):
     # -------------------------------------------------------------- top: identifiers, collapsible
     with ui.expansion("Session identifiers", icon="badge", value=True) \
             .classes("w-full bg-grey-1 rounded-borders").props("dense header-class=text-h6") as ids:
-        with ui.grid(columns=4).classes("w-full gap-x-4 gap-y-0 q-pa-sm"):
-            for f in manifest.session_fields:
-                hint = f"e.g. {f.example}" if f.example else ("optional" if not f.required else "")
-                ui.input(f.label, placeholder=hint, validation=lambda v, f=f: f.check(v)) \
-                    .bind_value(state.values, f.key).props("dense")
+        def field_input(f, label=None):
+            hint = f"e.g. {f.example}" if f.example else ("optional" if not f.required else "")
+            return ui.input(label or f.label, placeholder=hint, validation=lambda v, f=f: f.check(v)) \
+                .bind_value(state.values, f.key).props("dense outlined")
+
+        # fields named p<N> or p<N>_<x> belong to the person on seat P<N> and get a card each
+        person, shared, optional = {}, [], []
+        for f in manifest.session_fields:
+            if m := re.fullmatch(r"p(\d+)(?:_.+)?", f.key):
+                person.setdefault(f"P{m.group(1)}", []).append(f)
+            else:
+                (shared if f.required else optional).append(f)
+
+        with ui.column().classes("w-full gap-3 q-pa-sm"):
+            with ui.row().classes("w-full no-wrap gap-3"):
+                for f in shared:
+                    field_input(f).classes("grow")
+            with ui.row().classes("w-full no-wrap gap-3"):
+                for seat, fields in person.items():
+                    with ui.card().classes("grow q-pa-sm").props("flat bordered"):
+                        ui.label(seat).classes("text-subtitle1 text-weight-bold")
+                        with ui.row().classes("w-full no-wrap gap-2"):
+                            for f in fields:
+                                label = re.sub(rf"\s*(on seat )?{seat}$", "", f.label)
+                                field_input(f, label).classes("grow" if f.key == seat.lower() else "w-24")
+            for f in optional:
+                field_input(f).classes("w-full")
         with ui.row().classes("w-full items-center justify-between q-px-sm q-pb-sm"):
             next_file = ui.label().classes("text-caption text-grey-8 break-all")
             ui.button("Done", icon="expand_less", on_click=lambda: ids.set_value(False)).props("flat dense")
