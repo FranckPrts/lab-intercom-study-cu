@@ -74,11 +74,12 @@ flowchart LR
 | Where | What | Role |
 |---|---|---|
 | Participant | Enobio 32 (×3, labelled P1–P3) | 32-channel EEG + accelerometer, connected to its computer by USB cable. |
-| Participant | Respiration and heart-rate sensors ⚠️ (one set per participant) | Connected to the participant's computer over Bluetooth, published as LSL streams. |
+| Participant | Respiration belt: Vernier Go Direct GDX-RB (×3, Belt A–C = P1–P3) | Connected to the participant's computer over Bluetooth; [`respiration/vernier_connect.py`](respiration/README.md) publishes it as an LSL stream `GDX-RB_<serial>`. |
+| Participant | Heart-rate sensor ⚠️ (one per participant) | Connected to the participant's computer over Bluetooth, published as an LSL stream. |
 | Participant computer (×3) | NIC2 | Connects to its Enobio over USB, runs the synchronizer ⚠️, publishes `Pn-EEG`, `Pn-Accelerometer`, `Pn-Quality`, `Pn-Markers` over LSL. Also saves its own file as a backup. Also receives the participant's respiration and heart-rate sensors. |
 | Network | Switch for the participant computers, router, PoE switch for the cameras | Carries LSL. The router's Wi-Fi is not used. Neuroelectrics recommends a wired network when LSL is on. |
 | Room | 4 × GeoVision IP cameras | Powered and connected by the PoE switch, on the same network. How they are recorded is still open ⚠️. |
-| Main computer (Mac) | Experiment software ⚠️ | Shows the paradigm to participants and sends event markers as an LSL stream. |
+| Main computer (Mac) | Experiment software️ | Shows the paradigm to participants and sends event markers as an LSL stream. |
 | Main computer (Mac) | LabRecorder | Records every LSL stream (EEG, markers, physiology) into one XDF file per session. |
 
 ### How timing works
@@ -104,24 +105,18 @@ test checks ⚠️.
 | Path | Contents |
 |---|---|
 | [`bench/`](bench/README.md) | Bench test: procedure, stream check (`check_streams.py`) and recording analysis (`analyze_recording.py`) |
+| [`respiration/`](respiration/README.md) | `vernier_connect.py`: connects one respiration belt over Bluetooth and streams it to LSL, restarting it if it drops (runs on each participant computer) |
 | `environment.yml` | Conda environment `lab-intercom-study-cu` for our Python tools |
 | `.vscode/tasks.json` | VS Code tasks to set up the environment and run the bench scripts |
 
-Our Python tools run on the main computer only; nothing from this repository
-is installed on the participant computers.
+Our Python tools run on the main computer, with one exception:
+`respiration/vernier_connect.py` runs on each participant computer, with
+Python 3.12 and `vernier-lsl` installed there (see
+[respiration/README.md](respiration/README.md)). Nothing else from this
+repository is installed on the participant computers.
 
 ## Open points
 
-**Validate the setup**
-- ⚠️ Confirm NIC2 connects to an Enobio over USB and that its synchronizer
-  works (or is needed) over USB.
-- ⚠️ Electrical safety of a participant cabled by USB to a computer: check
-  with Neuroelectrics / the ethics board.
-- ⚠️ Run the bench test (three participant computers + main computer) and
-  fill in the results.
-- ⚠️ Confirm NIC2's LSL timestamps are on the LSL clock once its synchronizer is done.
-- ⚠️ Millisecond-level timing check across the three Enobios (shared electrical
-  test signal), and a short timing check to run at every session.
 
 **Experimental paradigm**
 - ⚠️ Choose the experiment software and define the paradigm (not finalized).
@@ -131,14 +126,17 @@ is installed on the participant computers.
   actually on screen (e.g. photodiode).
 
 **Respiration and heart rate**
-- ⚠️ Make/model of the sensors, sampling rates, and whether they timestamp at
-  measurement or on arrival over Bluetooth.
-- ⚠️ Add them to the bench test: check they appear in LSL and record next to
+- Respiration: Vernier GDX-RB belts, one per seat, tracked by the session
+  monitor as `P1-Respiration` … `P3-Respiration` (not required yet). Details
+  and open points in [respiration/README.md](respiration/README.md).
+
+- ⚠️ Heart rate: make/model of the sensor, sampling rate, and whether it
+  timestamps at measurement or on arrival over Bluetooth.
+- ⚠️ Add both to the bench test: check they appear in LSL and record next to
   the EEG.
 
 **Lab network**
-- ⚠️ LabRecorder on the Mac does not see NIC2's streams since a switch was
-  added.
+
 - ⚠️ The cameras are on a different subnet from the rest of the network and
   must be moved onto it.
 
@@ -152,8 +150,3 @@ is installed on the participant computers.
 - ⚠️ Recording conventions: file naming, IDs, storage, NIC2 backup files.
 - ⚠️ Channel labels for the 32-channel montage.
 
-**Questions for Neuroelectrics**
-- ⚠️ EEG units in NIC2's LSL output, which clock its timestamps use, whether
-  the synchronizer works over USB and keeps correcting during long sessions,
-  safe use of a USB-connected Enobio on a participant, and the accelerometer
-  rate.

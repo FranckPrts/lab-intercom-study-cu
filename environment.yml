@@ -15,3 +15,4 @@ dependencies:
   - pip
   - pip:
       - pylsl>=1.16  # not current on conda-forge; the pip wheel bundles liblsl
+      - vernier-lsl  # Vernier Go Direct (GDX-RB belt) -> LSL; used by respiration/vernier_connect.py

@@ -10,6 +10,7 @@ __pycache__/
 
 # Recordings, logs and generated manifests (session_monitor output)
 data/
+vernier_connect.log
 
 # Session manifests: only the *_EXAMPLE.yaml templates are tracked
 bench/devices.json

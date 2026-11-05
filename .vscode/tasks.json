@@ -73,6 +73,14 @@
       "command": "conda run --no-capture-output --name lab-intercom-study-cu python bench/analyze_recording.py \"${input:xdfPath}\"",
       "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": []
+    },
+    {
+      "label": "Respiration: connect belt",
+      "detail": "Pick a Vernier GDX-RB belt, stream it to LSL with vernier-lsl, restart if it drops (Ctrl+C here quits)",
+      "type": "shell",
+      "command": "conda run --no-capture-output --name lab-intercom-study-cu python -u respiration/vernier_connect.py",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
     }
   ],
   "inputs": [
