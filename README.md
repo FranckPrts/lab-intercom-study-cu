@@ -32,23 +32,29 @@ one file on one timeline.
 flowchart LR
     subgraph P1 [Participant 1]
         E1[Enobio 32]
-        B1["Respiration + heart rate"]
+        B1["Vernier respiration belt"]
+        H1["Heart rate ⚠️ TBD"]
     end
     subgraph P2 [Participant 2]
         E2[Enobio 32]
-        B2["Respiration + heart rate"]
+        B2["Vernier respiration belt"]
+        H2["Heart rate ⚠️ TBD"]
     end
     subgraph P3 [Participant 3]
         E3[Enobio 32]
-        B3["Respiration + heart rate"]
+        B3["Vernier respiration belt"]
+        H3["Heart rate ⚠️ TBD"]
     end
 
-    E1 -- "USB cable" --> C1[Computer 1<br/>NIC2]
+    E1 -- "USB cable" --> C1[Computer 1<br/>NIC2 + vernier_connect]
     B1 -. "Bluetooth" .-> C1
-    E2 -- "USB cable" --> C2[Computer 2<br/>NIC2]
+    H1 -. "Bluetooth" .-> C1
+    E2 -- "USB cable" --> C2[Computer 2<br/>NIC2 + vernier_connect]
     B2 -. "Bluetooth" .-> C2
-    E3 -- "USB cable" --> C3[Computer 3<br/>NIC2]
+    H2 -. "Bluetooth" .-> C2
+    E3 -- "USB cable" --> C3[Computer 3<br/>NIC2 + vernier_connect]
     B3 -. "Bluetooth" .-> C3
+    H3 -. "Bluetooth" .-> C3
 
     C1 -- "Ethernet · LSL" --> SW1[Switch]
     C2 -- "Ethernet · LSL" --> SW1
@@ -88,9 +94,13 @@ flowchart LR
    clock to its computer. It takes a few minutes after connecting; NIC2 blocks
    recording until it is accurate enough. Neuroelectrics documents it for
    Wi-Fi; whether it runs the same way over USB still has to be confirmed ⚠️.
-2. **Respiration / heart rate → participant computer:** Bluetooth devices
-   often timestamp samples when they arrive at the computer, not when they are
-   measured, which adds a delay ⚠️.
+2. **Respiration belt → participant computer:** the Vernier belt connects over
+   Bluetooth, and `vernier-lsl` timestamps each sample when it arrives at the
+   computer, not when the belt measured it, so the Bluetooth delay is in the
+   timestamps ⚠️ (to measure).
+   **Heart rate → participant computer:** also Bluetooth; whether the sensor
+   timestamps at measurement or on arrival depends on the sensor, still to be
+   chosen ⚠️.
 3. **Participant computer → main computer:** LSL measures the clock offset
    between each participant computer and the main computer throughout the
    recording, and LabRecorder stores it in the file.
@@ -110,10 +120,10 @@ test checks ⚠️.
 | `.vscode/tasks.json` | VS Code tasks to set up the environment and run the bench scripts |
 
 Our Python tools run on the main computer, with one exception:
-`respiration/vernier_connect.py` runs on each participant computer, with
-Python 3.12 and `vernier-lsl` installed there (see
-[respiration/README.md](respiration/README.md)). Nothing else from this
-repository is installed on the participant computers.
+`respiration/vernier_connect.py` runs on each participant computer, from a
+clone of this repository with the same conda env, via the VS Code task
+**Respiration: connect belt** (see [respiration/README.md](respiration/README.md)).
+Nothing else from this repository is run on the participant computers.
 
 ## Open points
 

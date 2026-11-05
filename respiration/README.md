@@ -43,41 +43,36 @@ When the real serials of belts B and C are known, update them in **both**
 
 ## Setup on each participant computer (Windows, once)
 
-1. Install Python 3.12 from python.org.
-2. Install the two packages:
-   ```
-   py -3.12 -m pip install vernier-lsl pylsl
-   ```
-3. Copy `vernier_connect.py` to the computer.
-4. If `vernier-lsl` is not found when the script runs, set `VERNIER_LSL` at the
-   top of the script to the full path of `vernier-lsl.exe` (in Python's
-   `Scripts` folder).
-5. Do **not** pair the belt in Windows Bluetooth settings. `vernier-lsl`
+Use the project's conda environment and VS Code tasks, as on the Mac:
+
+1. Install VS Code and Miniforge (conda), and make sure `conda` works in the
+   VS Code terminal (see [bench/README.md](../bench/README.md)).
+2. Clone this repository and open it in VS Code.
+3. Run **Terminal → Run Task → Env: create**. The env includes `vernier-lsl`
+   and `pylsl`. After `environment.yml` changes, run **Env: update** instead.
+4. Do **not** pair the belt in Windows Bluetooth settings. `vernier-lsl`
    connects to it directly.
 
 ## Running it
 
-On participant computer N, before each session:
+On participant computer N, before each session: run **Terminal → Run Task →
+Respiration: connect belt**, and pick belt N in the menu (Belt A on
+computer 1, and so on).
 
-```
-py -3.12 vernier_connect.py --belt N
-```
-
-Leave the window open for the whole session; Ctrl+C stops it.
+Leave the task running for the whole session; Ctrl+C in its terminal stops it.
 
 To see which LSL streams are on the network (useful to check the stream
-name, see ⚠️ below):
+name, see ⚠️ below), from the VS Code terminal:
 
 ```
-py -3.12 vernier_connect.py --list-streams
+conda run --no-capture-output --name lab-intercom-study-cu python respiration/vernier_connect.py --list-streams
 ```
 
 ### On the Mac (testing only)
 
-The project's conda env includes `vernier-lsl`, so a belt can also be tested
-from the Mac: run the VS Code task **Respiration: connect belt** (after
-**Env: update**). The stream then comes from the Mac, so the session monitor
-shows it as MISMATCH (wrong host) with the study manifest.
+The same task works on the Mac to test a belt. The stream then comes from the
+Mac, so the session monitor shows it as MISMATCH (wrong host) with the study
+manifest.
 
 ## How the session monitor tracks the belts
 
